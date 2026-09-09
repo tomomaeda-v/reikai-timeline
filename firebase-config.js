@@ -1,16 +1,11 @@
-// Firebase の設定。Firebase コンソール → プロジェクトの設定 → 「マイアプリ」→ ウェブアプリ の
-// 「SDK の設定と構成」に表示される firebaseConfig をそのまま貼り付けてください。
-// ※ この値は公開されても問題ありません（アクセス制御は Firestore のセキュリティルールと Authentication で行います）。
+// Firebase の設定（Firebase コンソール → プロジェクトの設定 → マイアプリ の値。公開されても問題ありません）
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyARz2BldKh8iZfzIUaB60PwucrLzFMT9_A",
+  authDomain: "reikai-timeline.firebaseapp.com",
+  projectId: "reikai-timeline",
+  storageBucket: "reikai-timeline.firebasestorage.app",
+  messagingSenderId: "980251885165",
+  appId: "1:980251885165:web:b9caa7c18ec048dbcc8964"
 };
-
-// 共通ログインに使うアカウントのメールアドレス。
-// Firebase Authentication で「メール/パスワード」を有効にし、このアドレスでユーザーを1つ作成します。
-// そのユーザーのパスワードが、理事の皆さんに配る「共通パスワード」になります。
-export const SHARED_LOGIN_EMAIL = "board@example.com";
+// 共通ログインに使うアカウント（Firebase Authentication に登録済み）。パスワードが理事に配る共通パスワードです。
+export const SHARED_LOGIN_EMAIL = "rijikai@reikai-timeline.app";
