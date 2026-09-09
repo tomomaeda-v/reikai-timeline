@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>例会運営タイムライン</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F2F4F7; --surface:#FFFFFF; --surface-2:#E9EDF2; --line:#D5DBE3; --line-strong:#B9C2CD;
+  --ink:#1A222C; --muted:#64717F; --faint:#8E99A6;
+  --accent:#245B8F; --accent-ink:#FFFFFF; --accent-soft:#E3ECF6;
+  --done:#2F855A; --done-soft:#E1F2E8; --soon:#B7791F; --soon-soft:#FBF0D9; --late:#C53030; --late-soft:#FBE3E3;
+  --shadow:0 1px 2px rgba(20,30,45,.06),0 6px 20px -8px rgba(20,30,45,.12);
+  --radius:8px;
+  --display:"Zen Kaku Gothic New","Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  --body:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#10161C; --surface:#182028; --surface-2:#1F2933; --line:#2C3843; --line-strong:#3D4B59;
+    --ink:#E8ECF0; --muted:#93A0AD; --faint:#6C7987;
+    --accent:#7FB2E5; --accent-ink:#0E1A26; --accent-soft:#1E3247;
+    --done:#5FBF8C; --done-soft:#173226; --soon:#E0A94A; --soon-soft:#3A2D14; --late:#EF6B6B; --late-soft:#3F1D1D;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -8px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#10161C; --surface:#182028; --surface-2:#1F2933; --line:#2C3843; --line-strong:#3D4B59;
+  --ink:#E8ECF0; --muted:#93A0AD; --faint:#6C7987;
+  --accent:#7FB2E5; --accent-ink:#0E1A26; --accent-soft:#1E3247;
+  --done:#5FBF8C; --done-soft:#173226; --soon:#E0A94A; --soon-soft:#3A2D14; --late:#EF6B6B; --late-soft:#3F1D1D;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -8px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.3}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.top-in{max-width:1240px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand h1{font-size:17px;font-weight:700}
+.brand .eyebrow{font-size:10.5px}
+.top-mid{display:flex;align-items:center;gap:10px;flex:1;min-width:260px;flex-wrap:wrap}
+.top select,.top input[type=date]{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:6px 10px;min-height:34px}
+.count{display:flex;align-items:baseline;gap:8px;padding:4px 12px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-family:var(--mono);font-size:13px;white-space:nowrap}
+.count b{font-size:20px;font-weight:500}
+.me{display:flex;align-items:center;gap:8px;margin-left:auto}
+.me label{color:var(--muted);font-size:12.5px}
+.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:6px;padding:6px 12px;cursor:pointer;min-height:34px;transition:background .15s}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:3px 9px;min-height:28px;font-size:12.5px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* layout */
+.wrap{max-width:1240px;margin:0 auto;padding:20px;display:grid;grid-template-columns:330px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.wrap{grid-template-columns:1fr}}
+
+/* rail */
+.rail{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);position:sticky;top:76px}
+@media (max-width:860px){.rail{position:static}}
+.rail-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rail-head h2{font-size:14px}
+.progress{height:4px;background:var(--surface-2);margin:0 16px 10px;border-radius:2px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--done);width:0;transition:width .3s}
+.steps{list-style:none;margin:0;padding:6px 8px 10px;display:flex;flex-direction:column}
+.step{display:grid;grid-template-columns:22px 62px 1fr auto;gap:0 10px;align-items:center;padding:9px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;position:relative;text-align:left;width:100%;background:none}
+.step:hover{background:var(--surface-2)}
+.step.active{background:var(--accent-soft);border-color:transparent}
+.step .dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--line-strong);background:var(--surface);justify-self:center;z-index:1}
+.step .dot.done{background:var(--done);border-color:var(--done)}
+.step .dot.late{background:var(--late);border-color:var(--late)}
+.step .dot.soon{border-color:var(--soon);background:var(--soon-soft)}
+.step .dot.today{border-color:var(--accent);background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.step:not(:last-child)::after{content:"";position:absolute;left:18px;top:30px;bottom:-12px;width:2px;background:var(--line)}
+.step .t{font-family:var(--mono);font-size:12.5px;color:var(--ink);font-weight:500}
+.step .t small{display:block;font-size:11px;color:var(--faint);font-weight:400}
+.step .name{font-size:13px;font-weight:500;line-height:1.35}
+.step .name small{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:2px 7px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.pill.done{background:var(--done-soft);color:var(--done)}
+.pill.late{background:var(--late-soft);color:var(--late)}
+.pill.soon{background:var(--soon-soft);color:var(--soon)}
+.pill.todo{background:var(--surface-2);color:var(--muted)}
+.pill.today{background:var(--accent);color:var(--accent-ink)}
+
+/* main */
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-h{padding:18px 22px 14px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.card-h .lead{flex:1;min-width:240px}
+.card-h h2{font-size:20px;margin-top:4px}
+.card-h .who{font-size:12.5px;color:var(--muted);margin-top:6px}
+.card-h .due{text-align:right;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.card-h .due b{display:block;font-size:22px;color:var(--ink);font-weight:500}
+.card-b{padding:18px 22px;display:flex;flex-direction:column;gap:18px}
+.desc{color:var(--muted);max-width:68ch;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 18px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.wide{grid-column:1/-1}
+.field label{font-size:12px;color:var(--muted);font-weight:500}
+.field input,.field textarea,.field select{background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+.field textarea{min-height:88px;resize:vertical;line-height:1.55}
+.field input[type=number]{font-family:var(--mono)}
+.field .hint{font-size:11.5px;color:var(--faint)}
+.check{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--ground);cursor:pointer}
+.check input{width:16px;height:16px;accent-color:var(--done);margin:0}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--line)}
+.actions .meta{color:var(--faint);font-size:12px;margin-left:auto}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:8px 16px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
+.sect{display:flex;flex-direction:column;gap:10px}
+.sect h3{font-size:14.5px;display:flex;align-items:baseline;gap:10px}
+.sect h3 .eyebrow{text-transform:none;letter-spacing:.02em}
+
+/* ideas */
+.idea-form{display:grid;grid-template-columns:170px 1fr auto;gap:10px;align-items:start}
+@media (max-width:640px){.idea-form{grid-template-columns:1fr}}
+.idea-form select,.idea-form textarea{background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+.idea-form textarea{min-height:60px;resize:vertical}
+.ideas{display:flex;flex-direction:column;gap:8px}
+.idea{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--ground);align-items:start}
+.idea .cat{font-size:11px;padding:2px 8px;border-radius:4px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;font-weight:500;margin-top:2px}
+.idea .cat.c1{background:var(--accent-soft);color:var(--accent)}
+.idea .cat.c2{background:var(--done-soft);color:var(--done)}
+.idea .cat.c3{background:var(--soon-soft);color:var(--soon)}
+.idea .cat.c4{background:var(--surface-2);color:var(--ink)}
+.idea .cat.c5{background:var(--late-soft);color:var(--late)}
+.idea .txt{white-space:pre-wrap;line-height:1.55}
+.idea .by{font-size:11.5px;color:var(--muted);margin-top:4px}
+.idea .like{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;cursor:pointer;font-family:var(--mono);font-size:12px;white-space:nowrap}
+.idea .like.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.roster{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+.chip.on{background:var(--done-soft);color:var(--done);border-color:transparent}
+.chip.absent{background:var(--late-soft);color:var(--late);border-color:transparent}
+.chip.hold{background:var(--soon-soft);color:var(--soon);border-color:transparent}
+.empty{color:var(--faint);font-size:13px;padding:14px;border:1px dashed var(--line);border-radius:6px;text-align:center}
+
+/* tables */
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;color:var(--muted);font-weight:500}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+.tbl{overflow-x:auto}
+
+/* kpi tiles */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{padding:12px 14px;border-radius:6px;background:var(--ground);border:1px solid var(--line)}
+.kpi .k{font-size:11.5px;color:var(--muted)}
+.kpi .v{font-family:var(--mono);font-size:22px;margin-top:2px}
+.kpi .v small{font-size:12px;color:var(--faint)}
+
+/* comments */
+.comments{display:flex;flex-direction:column;gap:8px}
+.cmt{display:grid;grid-template-columns:1fr;gap:2px;padding:8px 12px;border-left:3px solid var(--line-strong);background:var(--ground);border-radius:0 6px 6px 0}
+.cmt .h{font-size:11.5px;color:var(--muted)}
+.cmt .h b{color:var(--ink);font-weight:500}
+.cmt .b{white-space:pre-wrap}
+.cmt-form{display:flex;gap:8px;align-items:flex-start}
+.cmt-form textarea{flex:1;background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-height:44px;resize:vertical}
+
+/* banner / modal */
+.banner{background:var(--soon-soft);color:var(--soon);border:1px solid transparent;padding:8px 14px;border-radius:6px;font-size:13px}
+.banner.late{background:var(--late-soft);color:var(--late)}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:0;max-width:440px;width:calc(100% - 32px);box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(10,15,20,.45)}
+dialog .d-h{padding:16px 20px 10px;border-bottom:1px solid var(--line)}
+dialog .d-h h2{font-size:16px}
+dialog .d-b{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px}
+.members-edit{min-height:180px}
+.overview{padding:14px 16px;border-top:1px solid var(--line)}
+.overview h3{font-size:12.5px;color:var(--muted);font-weight:500;margin-bottom:8px}
+.ov{display:flex;flex-direction:column;gap:4px}
+.ov button{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:none;border:0;padding:5px 6px;border-radius:5px;cursor:pointer;text-align:left;font-size:13px}
+.ov button:hover{background:var(--surface-2)}
+.ov button.cur{background:var(--accent-soft)}
+.ov .d{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:var(--ground)}
+.login-box{width:min(100%,400px);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:28px 26px;display:flex;flex-direction:column;gap:12px}
+.login-box h1{font-size:22px}
+.login-box .desc{margin:0 0 6px}
+.login-err{color:var(--late);font-size:13px}
+.top .btn.logout{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="login" id="login">
+  <form class="login-box" id="loginForm">
+    <span class="eyebrow">NPO法人 外国人在留支援コンソーシアム</span>
+    <h1>例会運営タイムライン</h1>
+    <p class="desc">理事向けの運営ボードです。共通パスワードを入力してください。</p>
+    <div class="field"><label for="pw">パスワード</label><input id="pw" type="password" autocomplete="current-password" required></div>
+    <div class="login-err" id="loginErr" hidden></div>
+    <button class="btn primary" type="submit" id="loginBtn">入る</button>
+  </form>
+</div>
+<div id="app" hidden>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <span class="eyebrow">NPO法人 外国人在留支援コンソーシアム</span>
+      <h1>例会運営タイムライン</h1>
+    </div>
+    <div class="top-mid">
+      <select id="meetingSel" aria-label="例会を選択"></select>
+      <button class="btn small" id="editMeetingBtn">日程・会場</button>
+      <button class="btn small" id="newMeetingBtn">＋ 例会を追加</button>
+      <div class="count" id="countdown"><b>–</b><span>日</span></div>
+    </div>
+    <div class="me">
+      <label for="meSel">あなた</label>
+      <select id="meSel" aria-label="あなたの名前"></select>
+      <button class="btn small" id="membersBtn" title="理事名簿を編集">名簿</button>
+      <button class="btn small ghost logout" id="logoutBtn">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="rail">
+    <div class="rail-head"><h2 id="railTitle">標準タイムライン</h2><span class="mono" id="railProg" style="font-size:12px;color:var(--muted)">0 / 8</span></div>
+    <div class="progress"><i id="progBar"></i></div>
+    <ul class="steps" id="steps"></ul>
+    <div class="overview"><h3>例会一覧</h3><div class="ov" id="ov"></div></div>
+  </aside>
+  <main class="main" id="main">
+    <div id="banner" hidden></div>
+    <section class="card" id="stepCard"></section>
+  </main>
+</div>
+
+<dialog id="meetingDlg">
+  <form method="dialog">
+    <div class="d-h"><h2 id="mdTitle">例会を追加</h2></div>
+    <div class="d-b">
+      <div class="field"><label for="mdName">名称</label><input id="mdName" placeholder="例：11月例会" required></div>
+      <div class="field"><label for="mdDate">開催日（T）</label><input id="mdDate" type="date" required><span class="hint">T−60日〜T＋7日の期日はこの日付から自動計算されます</span></div>
+      <div class="field"><label for="mdVenue">会場</label><input id="mdVenue" placeholder="例：品川 会議室 ＋ Zoom"></div>
+    </div>
+    <div class="d-f"><button class="btn" value="cancel">キャンセル</button><button class="btn primary" id="mdSave" value="ok">保存</button></div>
+  </form>
+</dialog>
+
+<dialog id="membersDlg">
+  <form method="dialog">
+    <div class="d-h"><h2>理事名簿</h2></div>
+    <div class="d-b">
+      <div class="field"><label for="mList">1行に1名（氏名、役割）</label><textarea id="mList" class="members-edit" placeholder="前田 智之, 理事長"></textarea><span class="hint">役割は「理事長 / 理事 / 事務局」など。行を消すと名簿から外れます（過去の記録は残ります）。</span></div>
+    </div>
+    <div class="d-f"><button class="btn" value="cancel">キャンセル</button><button class="btn primary" value="ok" id="mSave">保存</button></div>
+  </form>
+</dialog>
+
+<dialog id="whoDlg">
+  <form method="dialog">
+    <div class="d-h"><h2>お名前を選んでください</h2></div>
+    <div class="d-b"><p class="desc" style="margin:0">入力や完了チェックにお名前が記録されます。次回からはこのブラウザで自動的に選択されます。</p>
+      <div class="field"><select id="whoSel"></select></div></div>
+    <div class="d-f"><button class="btn primary" value="ok">はじめる</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc as fsDoc, collection as fsCol, getDoc, setDoc, deleteDoc, addDoc, onSnapshot, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { firebaseConfig, SHARED_LOGIN_EMAIL } from "./firebase-config.js";
+
+/* Firestore を薄くラップ（doc/collection/get/set/update/delete/onSnapshot） */
+function makeDb(fs){
+  const wrapDoc = d => ({ id: d.id, exists: d.exists(), data: () => d.data() });
+  const wrapQ = q => ({ docs: q.docs.map(wrapDoc), size: q.size, empty: q.empty });
+  const docRef = path => { const r = fsDoc(fs, path); return {
+    id: r.id, path,
+    get: async () => wrapDoc(await getDoc(r)),
+    set: data => setDoc(r, data),
+    update: data => setDoc(r, data, { merge: true }),
+    delete: () => deleteDoc(r),
+    onSnapshot: (next, err) => onSnapshot(r, s => next(wrapDoc(s)), err),
+  }; };
+  const colRef = (path, order) => { const c = fsCol(fs, path); const q = order ? query(c, orderBy(order[0], order[1])) : c; return {
+    path,
+    doc: id => docRef(id ? `${path}/${id}` : fsDoc(c).path),
+    add: async data => { const r = await addDoc(c, data); return docRef(r.path); },
+    orderBy: (f, dir) => colRef(path, [f, dir || "asc"]),
+    get: async () => wrapQ(await getDocs(q)),
+    onSnapshot: (next, err) => onSnapshot(q, s => next(wrapQ(s)), err),
+  }; };
+  return { doc: docRef, collection: colRef };
+}
+
+/* ---------- 定義（改善方針 令和8年度下期 改訂版 の標準タイムライン） ---------- */
+const STEPS = [
+  {key:"t60", off:-60, label:"T−60", name:"企画アイデア募集開始", owner:"理事長 → 全理事",
+   desc:"テーマ・登壇候補・集客方法・リアル参加を促す仕掛け・懇親会企画のアイデアを全理事から募集します。毎回1案で構いません。",
+   fields:[{k:"callSentAt",t:"date",l:"募集案内の送付日"},{k:"deadline",t:"date",l:"提出締切（目安 T−50）"}], ideas:true},
+  {key:"t45", off:-45, label:"T−45", name:"テーマ・企画を決定", owner:"全理事（まとまらなければ理事長が最終決定）",
+   desc:"集まったアイデアを集約し、テーマと企画の骨子を決めます。",
+   fields:[{k:"theme",t:"text",l:"決定テーマ",wide:true},{k:"outline",t:"textarea",l:"構成・主要論点",wide:true},{k:"speakerCand",t:"textarea",l:"登壇候補（外部ゲスト可）"},{k:"socialPlan",t:"textarea",l:"交流・懇親会企画（リアル参加の価値）"},{k:"decidedHow",t:"select",l:"決定方法",opts:["","理事間で合意","理事長が最終決定"]}]},
+  {key:"t30", off:-30, label:"T−30", name:"登壇者確定・会場確定・告知開始", owner:"運営委員会 ／ 広報・会員拡大委員会",
+   desc:"登壇者と会場を確定し、集客標準手順に沿って告知を始めます。外部参加は有料2,000円、会員は無料。",
+   fields:[{k:"speakers",t:"textarea",l:"登壇者（確定）",wide:true},{k:"venueFixed",t:"text",l:"会場（確定）"},{k:"zoom",t:"select",l:"オンライン併用",opts:["","あり（Zoom）","なし"]},{k:"announceStart",t:"date",l:"告知開始日"},{k:"channels",t:"text",l:"告知媒体（メール・会員紹介・SNS等）"},{k:"targetExt",t:"number",l:"外部参加 目標人数",hint:"標準目標 5〜10名"},{k:"noticeText",t:"textarea",l:"告知文・リード文",wide:true}]},
+  {key:"t14", off:-14, label:"T−14", name:"集客中間レビュー", owner:"広報・会員拡大委員会 → 全理事",
+   desc:"申込状況を確認し、目標未達の場合は理事の皆様に個別の声かけをお願いします。",
+   fields:[{k:"midMembers",t:"number",l:"会員 申込数"},{k:"midExt",t:"number",l:"外部 申込数"},{k:"midNote",t:"textarea",l:"レビュー所見・依頼事項",wide:true}], outreach:true},
+  {key:"day", off:0, label:"当日", name:"開催・受付・設営", owner:"運営委（受付・設営）／ 広報・会員拡大委（外部対応・名刺回収）",
+   desc:"受付・Zoom設営・音響（接続トラブル再発防止）、出欠管理、外部参加者への対応と名刺回収。",
+   fields:[{k:"actDirectors",t:"number",l:"理事 出席数"},{k:"actMembers",t:"number",l:"会員 出席数"},{k:"actExt",t:"number",l:"外部参加者数"},{k:"cards",t:"number",l:"名刺回収枚数"},{k:"dayNote",t:"textarea",l:"当日メモ（トラブル・気づき）",wide:true}], attendance:true},
+  {key:"t1", off:1, label:"T＋1", name:"「例会3分まとめ」配信", owner:"運営委員会",
+   desc:"24時間以内に、全会員・欠席者へ3分まとめを配信します。",
+   fields:[{k:"summaryLink",t:"text",l:"まとめのリンク・保存先",wide:true},{k:"summarySentAt",t:"date",l:"配信日"},{k:"summarySent",t:"check",l:"全会員・欠席者へ配信済み"}]},
+  {key:"t3", off:3, label:"T＋3", name:"参加者フォロー・アンケート", owner:"広報・会員拡大委員会",
+   desc:"外部参加者へお礼と次回例会のご案内。その場で入会を迫らず、次回へ丁寧にお誘いします。",
+   fields:[{k:"thanks",t:"check",l:"外部参加者へお礼メール送付"},{k:"survey",t:"check",l:"参加者アンケート送付"},{k:"nextInvite",t:"check",l:"次回例会のご案内送付"},{k:"joinInq",t:"number",l:"入会問い合わせ件数"},{k:"followNote",t:"textarea",l:"フォロー記録",wide:true}]},
+  {key:"t7", off:7, label:"T＋7", name:"振り返り・KPI記録", owner:"各委員長",
+   desc:"KPI3指標（理事・会員の参加率、外部参加者数、外部参加者の入会転換率）を記録し、次回に活かします。",
+   fields:[{k:"memberTotal",t:"number",l:"会員総数（参加率の分母）"},{k:"joined",t:"number",l:"外部参加者からの入会数"},{k:"good",t:"textarea",l:"良かった点"},{k:"improve",t:"textarea",l:"改善点・次回への申し送り"}], kpi:true},
+];
+const CATS = ["テーマ","登壇候補","集客方法","リアル参加の仕掛け","懇親会・交流企画"];
+const DEFAULT_MEMBERS = [
+  {id:"maeda",name:"前田 智之",role:"理事長"},{id:"kawasaki",name:"川崎",role:"理事"},{id:"iwanaga",name:"岩永",role:"理事"},
+  {id:"ando",name:"安藤",role:"理事"},{id:"miura",name:"三浦",role:"理事"},{id:"yamashita",name:"山下",role:"理事"},
+  {id:"ichiyanagi",name:"一柳",role:"理事"},{id:"suzuki",name:"鈴木",role:"理事"},{id:"hirayama",name:"平山",role:"理事"},
+  {id:"kitamura",name:"北村",role:"理事"},{id:"ishibashi",name:"石橋",role:"事務局"}];
+
+/* ---------- 状態 ---------- */
+let db = null, members = DEFAULT_MEMBERS.slice(), meetings = [], cur = null, curId = null, curStep = "t60", me = null;
+let ideas = [], comments = [], outreach = [], attendance = [];
+let unsubs = [];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const todayStr = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-"); };
+const addDays = (iso, n) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate()+n); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-"); };
+const diffDays = (a, b) => Math.round((new Date(a+"T00:00:00") - new Date(b+"T00:00:00"))/86400000);
+const fmt = iso => { if(!iso) return "—"; const d = new Date(iso+"T00:00:00"); return `${d.getMonth()+1}/${d.getDate()}（${"日月火水木金土"[d.getDay()]}）`; };
+const now = () => new Date().toISOString();
+const memberName = id => (members.find(m => m.id===id)||{}).name || id;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); }
+function safeLS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v);}catch(e){ return null; } }
+
+function stepState(m, s){
+  const st = (m.steps||{})[s.key] || {};
+  if (st.done) return "done";
+  const due = addDays(m.date, s.off), t = todayStr(), d = diffDays(due, t);
+  if (d < 0) return "late";
+  if (d === 0) return "today";
+  if (d <= 5) return "soon";
+  return "todo";
+}
+const STATE_LABEL = {done:"完了", late:"期限超過", today:"本日", soon:"まもなく", todo:"予定"};
+
+/* ---------- 描画 ---------- */
+function renderMeetingSel(){
+  const sel = $("#meetingSel");
+  sel.innerHTML = meetings.length ? meetings.map(m => `<option value="${esc(m.id)}" ${m.id===curId?"selected":""}>${esc(m.title)}　${fmt(m.date)}</option>`).join("") : `<option value="">（例会がありません）</option>`;
+  const ov = $("#ov");
+  ov.innerHTML = meetings.map(m => { const done = STEPS.filter(s => (m.steps||{})[s.key]?.done).length; const late = STEPS.filter(s => stepState(m,s)==="late").length;
+    return `<button data-id="${esc(m.id)}" class="${m.id===curId?"cur":""}"><span>${esc(m.title)}</span><span class="d">${fmt(m.date)}</span><span class="pill ${late?"late":done===8?"done":"todo"}">${late?`遅れ${late}`:`${done}/8`}</span></button>`; }).join("") || `<div class="empty">「例会を追加」から始めてください</div>`;
+  ov.querySelectorAll("button").forEach(b => b.onclick = () => selectMeeting(b.dataset.id));
+}
+function renderMe(){
+  const opts = `<option value="">— 選択 —</option>` + members.map(m => `<option value="${esc(m.id)}" ${m.id===me?"selected":""}>${esc(m.name)}</option>`).join("");
+  $("#meSel").innerHTML = opts; $("#whoSel").innerHTML = members.map(m => `<option value="${esc(m.id)}">${esc(m.name)}（${esc(m.role)}）</option>`).join("");
+}
+function renderRail(){
+  if (!cur){ $("#steps").innerHTML = `<li class="empty" style="margin:8px">例会を選択してください</li>`; $("#countdown").innerHTML = `<b>–</b><span>日</span>`; return; }
+  const t = todayStr(), dd = diffDays(cur.date, t);
+  $("#countdown").innerHTML = dd > 0 ? `<b>T−${dd}</b><span>開催まで${dd}日</span>` : dd === 0 ? `<b>当日</b><span>本日開催</span>` : `<b>T＋${-dd}</b><span>開催から${-dd}日</span>`;
+  $("#steps").innerHTML = STEPS.map(s => { const st = stepState(cur, s); const due = addDays(cur.date, s.off);
+    return `<li><button class="step ${s.key===curStep?"active":""}" data-key="${s.key}"><span class="dot ${st}"></span><span class="t">${s.label}<small>${fmt(due)}</small></span><span class="name">${esc(s.name)}<small>${esc(s.owner)}</small></span><span class="pill ${st}">${STATE_LABEL[st]}</span></button></li>`; }).join("");
+  $("#steps").querySelectorAll(".step").forEach(b => b.onclick = () => { curStep = b.dataset.key; renderRail(); renderStep(); });
+  const done = STEPS.filter(s => (cur.steps||{})[s.key]?.done).length;
+  $("#railProg").textContent = `${done} / 8`; $("#progBar").style.width = (done/8*100)+"%";
+  $("#railTitle").textContent = cur.title;
+}
+function fieldHtml(f, v){
+  const val = v ?? "";
+  if (f.t === "check") return `<label class="check field ${f.wide?"wide":""}"><input type="checkbox" data-k="${f.k}" ${val?"checked":""}><span>${esc(f.l)}</span></label>`;
+  let inp;
+  if (f.t === "textarea") inp = `<textarea data-k="${f.k}">${esc(val)}</textarea>`;
+  else if (f.t === "select") inp = `<select data-k="${f.k}">${f.opts.map(o => `<option ${o===val?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
+  else inp = `<input type="${f.t}" data-k="${f.k}" value="${esc(val)}" ${f.t==="number"?'min="0" inputmode="numeric"':""}>`;
+  return `<div class="field ${f.wide||f.t==="textarea"?"wide":""}"><label>${esc(f.l)}</label>${inp}${f.hint?`<span class="hint">${esc(f.hint)}</span>`:""}</div>`;
+}
+function renderStep(){
+  const card = $("#stepCard");
+  if (!cur){ card.innerHTML = `<div class="card-b"><div class="empty">右上の「＋ 例会を追加」で開催日を登録すると、T−60日からT＋7日までの期日が自動で並びます。</div></div>`; return; }
+  const s = STEPS.find(x => x.key===curStep), st = stepState(cur, s), due = addDays(cur.date, s.off), d = diffDays(due, todayStr());
+  const F = cur.fields || {}, meta = (cur.steps||{})[s.key] || {};
+  const dueLine = st==="done" ? `完了 ${meta.at ? fmt(meta.at.slice(0,10)) : ""} ${esc(memberName(meta.by||""))}` : d>0 ? `あと${d}日` : d===0 ? "本日が期限" : `${-d}日超過`;
+  let html = `<div class="card-h"><div class="lead"><span class="eyebrow">${s.label} ・ ${esc(s.owner)}</span><h2>${esc(s.name)}</h2><div class="who">担当：${esc(s.owner)}</div></div><div class="due">期日<b>${fmt(due)}</b><span class="pill ${st}">${STATE_LABEL[st]}</span> ${esc(dueLine)}</div></div><div class="card-b">`;
+  html += `<p class="desc">${esc(s.desc)}</p>`;
+  if (s.ideas) html += ideasHtml();
+  if (s.kpi) html += kpiHtml(F);
+  html += `<div class="sect"><h3>記録 <span class="eyebrow">この工程の入力欄</span></h3><div class="grid" id="fields">${s.fields.map(f => fieldHtml(f, F[f.k])).join("")}</div></div>`;
+  if (s.outreach) html += outreachHtml(F);
+  if (s.attendance) html += attendanceHtml();
+  html += commentsHtml(s.key);
+  html += `<div class="actions"><button class="btn primary" id="saveBtn">保存</button><button class="btn" id="doneBtn">${meta.done?"完了を取り消す":"この工程を完了にする"}</button><span class="meta">${cur.updatedAt ? `最終更新 ${new Date(cur.updatedAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} ${esc(memberName(cur.updatedBy||""))}` : ""}</span></div></div>`;
+  card.innerHTML = html;
+  bindStep(s);
+}
+function ideasHtml(){
+  const byCat = {}; ideas.forEach(i => (byCat[i.category] ||= []).push(i));
+  const submitted = new Set(ideas.map(i => i.authorId));
+  const directors = members.filter(m => m.role !== "事務局");
+  const roster = `<div class="roster">${directors.map(m => `<span class="chip ${submitted.has(m.id)?"on":""}">${esc(m.name)}</span>`).join("")}</div>`;
+  const list = ideas.length ? `<div class="ideas">${ideas.map(i => { const likes = Object.keys(i.likes||{}).filter(k => i.likes[k]); const mine = me && i.likes && i.likes[me];
+    return `<div class="idea"><span class="cat c${CATS.indexOf(i.category)+1}">${esc(i.category)}</span><div><div class="txt">${esc(i.text)}</div><div class="by">${esc(i.author)} ・ ${i.createdAt ? new Date(i.createdAt).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"}) : ""}${i.authorId===me?` ・ <a href="#" data-del="${esc(i.id)}">削除</a>`:""}</div></div><button class="like ${mine?"on":""}" data-like="${esc(i.id)}" title="賛同">👍 ${likes.length}</button></div>`; }).join("")}</div>` : `<div class="empty">まだアイデアがありません。最初の1案をどうぞ。</div>`;
+  return `<div class="sect"><h3>企画アイデア <span class="eyebrow">提出 ${submitted.size} / ${directors.length}名 ・ ${ideas.length}件</span></h3>${roster}
+    <div class="idea-form"><select id="ideaCat">${CATS.map(c => `<option>${c}</option>`).join("")}</select><textarea id="ideaText" placeholder="テーマ案・登壇候補・集客のアイデアなど（1案で構いません）"></textarea><button class="btn primary" id="ideaAdd">投稿</button></div>${list}</div>`;
+}
+function outreachHtml(F){
+  const target = Number(F.targetExt||0), ext = Number(F.midExt||0), gap = target - ext;
+  const banner = target ? (gap > 0 ? `<div class="banner late">外部申込 ${ext} / 目標 ${target}名 — あと${gap}名。理事の皆様のお知り合いへの声かけをお願いします。</div>` : `<div class="banner" style="background:var(--done-soft);color:var(--done)">外部申込 ${ext} / 目標 ${target}名 — 目標達成</div>`) : "";
+  const mine = outreach.find(o => o.id===me) || {};
+  const rows = outreach.length ? `<div class="tbl"><table><thead><tr><th>理事</th><th class="num">声かけ予定</th><th class="num">申込につながった数</th><th>メモ</th></tr></thead><tbody>${outreach.map(o => `<tr><td>${esc(o.name)}</td><td class="num">${o.planned??0}</td><td class="num">${o.result??0}</td><td>${esc(o.note||"")}</td></tr>`).join("")}<tr><th>合計</th><th class="num">${outreach.reduce((a,o)=>a+Number(o.planned||0),0)}</th><th class="num">${outreach.reduce((a,o)=>a+Number(o.result||0),0)}</th><th></th></tr></tbody></table></div>` : `<div class="empty">まだ声かけの登録がありません</div>`;
+  return `<div class="sect"><h3>理事の声かけ <span class="eyebrow">各理事が自分の分を入力</span></h3>${banner}
+    <div class="grid"><div class="field"><label>私が声をかける人数</label><input type="number" min="0" id="orPlanned" value="${esc(mine.planned??"")}"></div><div class="field"><label>申込につながった数</label><input type="number" min="0" id="orResult" value="${esc(mine.result??"")}"></div><div class="field wide"><label>声かけ先・メモ</label><input id="orNote" value="${esc(mine.note||"")}" placeholder="例：登録支援機関2社、監理団体1社に案内"></div></div>
+    <div><button class="btn" id="orSave">声かけを登録</button></div>${rows}</div>`;
+}
+function attendanceHtml(){
+  const mine = attendance.find(a => a.id===me) || {};
+  const cls = s => s==="出席"?"on":s==="欠席"?"absent":s==="未定"?"hold":"";
+  const directors = members.filter(m => m.role !== "事務局");
+  const cnt = directors.filter(m => (attendance.find(a=>a.id===m.id)||{}).status==="出席").length;
+  return `<div class="sect"><h3>理事の出欠 <span class="eyebrow">出席 ${cnt} / ${directors.length}名</span></h3>
+    <div class="roster">${members.map(m => { const a = attendance.find(x => x.id===m.id)||{}; return `<span class="chip ${cls(a.status)}">${esc(m.name)}${a.status?`：${a.status}`:""}${a.social?"・懇親会":""}</span>`; }).join("")}</div>
+    <div class="grid"><div class="field"><label>私の出欠</label><select id="atStatus"><option value="">—</option>${["出席","欠席","未定"].map(o=>`<option ${mine.status===o?"selected":""}>${o}</option>`).join("")}</select></div><label class="check field"><input type="checkbox" id="atSocial" ${mine.social?"checked":""}><span>懇親会にも参加</span></label><div class="field"><label>ゲスト同伴（社名・人数）</label><input id="atGuest" value="${esc(mine.guest||"")}" placeholder="例：〇〇社 1名"></div></div>
+    <div><button class="btn" id="atSave">出欠を登録</button></div></div>`;
+}
+function kpiHtml(F){
+  const directors = members.filter(m => m.role !== "事務局").length;
+  const pct = (a,b) => (b>0 && a!=null && a!=="") ? Math.round(Number(a)/Number(b)*100)+"%" : "—";
+  return `<div class="sect"><h3>KPI 3指標 <span class="eyebrow">当日・T＋3・この工程の入力から自動計算</span></h3><div class="kpis">
+    <div class="kpi"><div class="k">理事 参加率</div><div class="v">${pct(F.actDirectors, directors)} <small>${F.actDirectors??"—"}/${directors}</small></div></div>
+    <div class="kpi"><div class="k">会員 参加率</div><div class="v">${pct(F.actMembers, F.memberTotal)} <small>${F.actMembers??"—"}/${F.memberTotal||"—"}</small></div></div>
+    <div class="kpi"><div class="k">外部参加者数</div><div class="v">${F.actExt??"—"} <small>目標 ${F.targetExt||"5〜10"}</small></div></div>
+    <div class="kpi"><div class="k">外部→入会 転換率</div><div class="v">${pct(F.joined, F.actExt)} <small>${F.joined??"—"}/${F.actExt??"—"}</small></div></div></div></div>`;
+}
+function commentsHtml(key){
+  const list = comments.filter(c => c.step===key).sort((a,b) => (a.createdAt||"").localeCompare(b.createdAt||""));
+  return `<div class="sect"><h3>連絡・コメント <span class="eyebrow">${list.length}件</span></h3><div class="comments">${list.map(c => `<div class="cmt"><div class="h"><b>${esc(c.author)}</b> ・ ${c.createdAt ? new Date(c.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}</div><div class="b">${esc(c.text)}</div></div>`).join("")}</div>
+    <div class="cmt-form"><textarea id="cmtText" placeholder="この工程についての連絡・確認・依頼"></textarea><button class="btn" id="cmtAdd">送信</button></div></div>`;
+}
+
+/* ---------- 操作 ---------- */
+function needMe(){ if (me) return true; $("#whoDlg").showModal(); return false; }
+function collectFields(s){
+  const out = {}; document.querySelectorAll("#fields [data-k]").forEach(el => { const k = el.dataset.k; out[k] = el.type==="checkbox" ? el.checked : el.type==="number" ? (el.value===""? "" : Number(el.value)) : el.value; }); return out;
+}
+async function guard(fn, okMsg){
+  try { await fn(); if (okMsg) toast(okMsg); }
+  catch(e){ console.error(e); const code = e && e.code; toast(code==="quota_exceeded" ? "保存容量の上限に達しました" : code==="unavailable" ? "一時的に保存できません。もう一度お試しください" : "保存に失敗しました"); }
+}
+function bindStep(s){
+  $("#saveBtn").onclick = () => { if(!needMe()) return; const fields = collectFields(s); guard(async () => {
+    if (db) await db.doc(`meetings/${curId}`).update({fields, updatedAt: now(), updatedBy: me});
+    else { Object.assign(cur.fields ||= {}, fields); cur.updatedAt = now(); cur.updatedBy = me; renderStep(); } }, "保存しました"); };
+  $("#doneBtn").onclick = () => { if(!needMe()) return; const wasDone = (cur.steps||{})[s.key]?.done; const fields = collectFields(s); guard(async () => {
+    const patch = {fields, steps:{[s.key]: wasDone ? {done:false} : {done:true, by:me, at: now()}}, updatedAt: now(), updatedBy: me};
+    if (db) await db.doc(`meetings/${curId}`).update(patch); else { Object.assign(cur.fields ||= {}, fields); (cur.steps ||= {})[s.key] = patch.steps[s.key]; renderRail(); renderStep(); } }, wasDone ? "完了を取り消しました" : `${s.label} を完了にしました`); };
+  const ia = $("#ideaAdd"); if (ia) ia.onclick = () => { if(!needMe()) return; const text = $("#ideaText").value.trim(); if(!text) return toast("内容を入力してください"); const doc = {author: memberName(me), authorId: me, category: $("#ideaCat").value, text, createdAt: now(), likes:{}};
+    guard(async () => { if (db) await db.collection(`meetings/${curId}/ideas`).add(doc); else { ideas.push({...doc, id:"local"+Date.now()}); renderStep(); } }, "アイデアを投稿しました"); };
+  document.querySelectorAll("[data-like]").forEach(b => b.onclick = () => { if(!needMe()) return; const id = b.dataset.like, i = ideas.find(x => x.id===id); const on = !(i.likes && i.likes[me]);
+    guard(async () => { if (db) await db.doc(`meetings/${curId}/ideas/${id}`).update({likes:{[me]: on}}); else { (i.likes ||= {})[me] = on; renderStep(); } }); });
+  document.querySelectorAll("[data-del]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.del; guard(async () => { if (db) await db.doc(`meetings/${curId}/ideas/${id}`).delete(); else { ideas = ideas.filter(x => x.id!==id); renderStep(); } }, "削除しました"); });
+  const or = $("#orSave"); if (or) or.onclick = () => { if(!needMe()) return; const doc = {name: memberName(me), planned: Number($("#orPlanned").value||0), result: Number($("#orResult").value||0), note: $("#orNote").value.trim(), updatedAt: now()};
+    guard(async () => { if (db) await db.doc(`meetings/${curId}/outreach/${me}`).set(doc); else { outreach = outreach.filter(o => o.id!==me).concat([{...doc, id:me}]); renderStep(); } }, "声かけを登録しました"); };
+  const at = $("#atSave"); if (at) at.onclick = () => { if(!needMe()) return; const doc = {name: memberName(me), status: $("#atStatus").value, social: $("#atSocial").checked, guest: $("#atGuest").value.trim(), updatedAt: now()};
+    guard(async () => { if (db) await db.doc(`meetings/${curId}/attendance/${me}`).set(doc); else { attendance = attendance.filter(o => o.id!==me).concat([{...doc, id:me}]); renderStep(); } }, "出欠を登録しました"); };
+  $("#cmtAdd").onclick = () => { if(!needMe()) return; const text = $("#cmtText").value.trim(); if(!text) return; const doc = {step: s.key, author: memberName(me), authorId: me, text, createdAt: now()};
+    guard(async () => { if (db) await db.collection(`meetings/${curId}/comments`).add(doc); else { comments.push({...doc, id:"c"+Date.now()}); renderStep(); } }, "送信しました"); };
+}
+
+/* ---------- データ購読 ---------- */
+function snapToArr(snap){ return snap.docs.filter(d => d.exists).map(d => ({id: d.id, ...d.data()})); }
+function selectMeeting(id){
+  curId = id; safeLS("reikai.meeting", id || "");
+  unsubs.forEach(u => u()); unsubs = []; ideas = []; comments = []; outreach = []; attendance = [];
+  cur = meetings.find(m => m.id===id) || null;
+  if (!cur){ renderMeetingSel(); renderRail(); renderStep(); return; }
+  if (db){
+    const onErr = e => console.warn("db", e);
+    unsubs.push(db.doc(`meetings/${id}`).onSnapshot(snap => { if(!snap.exists) return; cur = {id, ...snap.data()}; const i = meetings.findIndex(m => m.id===id); if (i>=0) meetings[i] = cur; renderMeetingSel(); renderRail(); renderStep(); }, onErr));
+    unsubs.push(db.collection(`meetings/${id}/ideas`).orderBy("createdAt","asc").onSnapshot(s => { ideas = snapToArr(s); if (curStep==="t60") renderStep(); }, onErr));
+    unsubs.push(db.collection(`meetings/${id}/comments`).onSnapshot(s => { comments = snapToArr(s); renderStep(); }, onErr));
+    unsubs.push(db.collection(`meetings/${id}/outreach`).onSnapshot(s => { outreach = snapToArr(s); if (curStep==="t14") renderStep(); }, onErr));
+    unsubs.push(db.collection(`meetings/${id}/attendance`).onSnapshot(s => { attendance = snapToArr(s); if (curStep==="day") renderStep(); }, onErr));
+  }
+  // 開いたときに「今」の工程を選ぶ
+  const t = todayStr(); let pick = STEPS.find(s => stepState(cur, s) !== "done" && diffDays(addDays(cur.date, s.off), t) >= 0) || STEPS[STEPS.length-1];
+  const firstLate = STEPS.find(s => stepState(cur, s)==="late"); if (firstLate) pick = firstLate;
+  curStep = pick.key;
+  renderMeetingSel(); renderRail(); renderStep();
+}
+function pickDefaultMeeting(){
+  const saved = safeLS("reikai.meeting"); if (saved && meetings.find(m => m.id===saved)) return saved;
+  const t = todayStr(); const up = meetings.filter(m => diffDays(m.date, t) >= -7).sort((a,b) => a.date.localeCompare(b.date));
+  return (up[0] || meetings[meetings.length-1] || {}).id || null;
+}
+
+/* ---------- 例会・名簿の編集 ---------- */
+let editingId = null;
+$("#newMeetingBtn").onclick = () => { editingId = null; $("#mdTitle").textContent = "例会を追加"; $("#mdName").value = ""; $("#mdDate").value = ""; $("#mdVenue").value = ""; $("#meetingDlg").showModal(); };
+$("#editMeetingBtn").onclick = () => { if(!cur) return toast("先に例会を追加してください"); editingId = cur.id; $("#mdTitle").textContent = "日程・会場を変更"; $("#mdName").value = cur.title; $("#mdDate").value = cur.date; $("#mdVenue").value = cur.venue||""; $("#meetingDlg").showModal(); };
+$("#meetingDlg").addEventListener("close", () => { if ($("#meetingDlg").returnValue !== "ok") return; const title = $("#mdName").value.trim(), date = $("#mdDate").value, venue = $("#mdVenue").value.trim(); if(!title || !date) return;
+  guard(async () => {
+    if (editingId){ if (db) await db.doc(`meetings/${editingId}`).update({title, date, venue, updatedAt: now(), updatedBy: me||""}); else { Object.assign(cur, {title, date, venue}); renderMeetingSel(); renderRail(); renderStep(); } }
+    else { const id = date.replace(/-/g,"").slice(0,6) + "-" + Math.random().toString(36).slice(2,6); const doc = {title, date, venue, createdAt: now(), createdBy: me||"", steps:{}, fields:{}};
+      if (db) await db.doc(`meetings/${id}`).set(doc); else { meetings.push({id, ...doc}); meetings.sort((a,b)=>a.date.localeCompare(b.date)); }
+      selectMeeting(id); }
+  }, "保存しました"); });
+$("#membersBtn").onclick = () => { $("#mList").value = members.map(m => `${m.name}, ${m.role}`).join("\n"); $("#membersDlg").showModal(); };
+$("#membersDlg").addEventListener("close", () => { if ($("#membersDlg").returnValue !== "ok") return;
+  const lines = $("#mList").value.split("\n").map(l => l.trim()).filter(Boolean);
+  const list = lines.map(l => { const [name, role] = l.split(/[,、，]/).map(x => (x||"").trim()); const ex = members.find(m => m.name===name); return {id: ex ? ex.id : "m" + Math.random().toString(36).slice(2,8), name, role: role || "理事"}; });
+  guard(async () => { if (db) await db.doc("config/members").set({list, updatedAt: now()}); else { members = list; renderMe(); renderStep(); } }, "名簿を保存しました"); });
+$("#meSel").onchange = e => { me = e.target.value || null; safeLS("reikai.me", me||""); renderStep(); };
+$("#whoDlg").addEventListener("close", () => { me = $("#whoSel").value || null; safeLS("reikai.me", me||""); renderMe(); renderStep(); });
+$("#meetingSel").onchange = e => selectMeeting(e.target.value);
+
+/* ---------- 起動 ---------- */
+function showBanner(text, cls){ const b = $("#banner"); b.className = "banner " + (cls||""); b.textContent = text; b.hidden = false; }
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const fs = getFirestore(app);
+
+$("#loginForm").addEventListener("submit", async ev => {
+  ev.preventDefault(); const btn = $("#loginBtn"), err = $("#loginErr"); btn.disabled = true; err.hidden = true;
+  try { await setPersistence(auth, browserLocalPersistence); await signInWithEmailAndPassword(auth, SHARED_LOGIN_EMAIL, $("#pw").value); }
+  catch(e){ err.textContent = /wrong-password|invalid-credential|invalid-login/.test(e.code||"") ? "パスワードが違います" : "ログインできませんでした（" + (e.code||e.message) + "）"; err.hidden = false; }
+  btn.disabled = false;
+});
+$("#logoutBtn").onclick = () => signOut(auth);
+
+let started = false;
+onAuthStateChanged(auth, user => {
+  $("#login").hidden = !!user; $("#app").hidden = !user;
+  if (user && !started){ started = true; start(); }
+  if (!user && started){ location.reload(); }
+});
+
+function start(){
+  db = makeDb(fs);
+  me = safeLS("reikai.me") || null;
+  renderMe(); renderRail(); renderStep();
+  db.doc("config/members").onSnapshot(snap => { if (snap.exists && Array.isArray(snap.data().list) && snap.data().list.length) members = snap.data().list; else db.doc("config/members").set({list: DEFAULT_MEMBERS, updatedAt: now()}); renderMe(); if (cur) renderStep(); if (!me) $("#whoDlg").showModal(); }, e => console.warn(e));
+  db.collection("meetings").orderBy("date","asc").onSnapshot(snap => {
+    meetings = snapToArr(snap);
+    if (!curId || !meetings.find(m => m.id===curId)) selectMeeting(pickDefaultMeeting());
+    else { cur = meetings.find(m => m.id===curId); renderMeetingSel(); renderRail(); }
+  }, e => { console.warn(e); showBanner("データに接続できませんでした。Firebaseの設定とセキュリティルールを確認してください。", "late"); });
+}
+</script>
+</body>
+</html>
