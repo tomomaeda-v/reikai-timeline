@@ -151,6 +151,7 @@ a{color:var(--accent)}
 .ai .note{font-size:12.5px;color:var(--muted)}
 .ai.busy{opacity:.7}
 @media (max-width:640px){.ai dl{grid-template-columns:1fr}}
+.ai-badge{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;padding:0 5px;border-radius:3px;background:var(--accent);color:var(--accent-ink);margin-left:6px;vertical-align:1px}
 .ai-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);padding:8px 12px;border:1px dashed var(--line);border-radius:6px}
 .ai-line .btns{margin-left:auto}
 .idea-form{display:grid;grid-template-columns:170px 1fr auto;gap:10px;align-items:start}
@@ -383,7 +384,7 @@ const addDays = (iso, n) => { const d = new Date(iso + "T00:00:00"); d.setDate(d
 const diffDays = (a, b) => Math.round((new Date(a+"T00:00:00") - new Date(b+"T00:00:00"))/86400000);
 const fmt = iso => { if(!iso) return "—"; const d = new Date(iso+"T00:00:00"); return `${d.getMonth()+1}/${d.getDate()}（${"日月火水木金土"[d.getDay()]}）`; };
 const now = () => new Date().toISOString();
-const memberName = id => (members.find(m => m.id===id)||{}).name || id;
+const memberName = id => id==="ai" ? "AI（自動入力）" : (members.find(m => m.id===id)||{}).name || id;
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); }
 function safeLS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v);}catch(e){ return null; } }
 
@@ -422,14 +423,14 @@ function renderRail(){
   $("#railProg").textContent = `${done} / 8`; $("#progBar").style.width = (done/8*100)+"%";
   $("#railTitle").textContent = cur.title;
 }
-function fieldHtml(f, v){
+function fieldHtml(f, v, aiBadge){
   const val = v ?? "";
   if (f.t === "check") return `<label class="check field ${f.wide?"wide":""}"><input type="checkbox" data-k="${f.k}" ${val?"checked":""}><span>${esc(f.l)}</span></label>`;
   let inp;
   if (f.t === "textarea") inp = `<textarea data-k="${f.k}">${esc(val)}</textarea>`;
   else if (f.t === "select") inp = `<select data-k="${f.k}">${f.opts.map(o => `<option ${o===val?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
   else inp = `<input type="${f.t}" data-k="${f.k}" value="${esc(val)}" ${f.t==="number"?'min="0" inputmode="numeric"':""}>`;
-  return `<div class="field ${f.wide||f.t==="textarea"?"wide":""}"><label>${esc(f.l)}</label>${inp}${f.hint?`<span class="hint">${esc(f.hint)}</span>`:""}</div>`;
+  return `<div class="field ${f.wide||f.t==="textarea"?"wide":""}"><label>${esc(f.l)}${aiBadge?`<span class="ai-badge" title="AIが自動入力した内容です。編集して保存すると、以後AIは上書きしません">AI</span>`:""}</label>${inp}${f.hint?`<span class="hint">${esc(f.hint)}</span>`:""}</div>`;
 }
 function renderStep(){
   const card = $("#stepCard");
@@ -442,7 +443,7 @@ function renderStep(){
   if (s.ideas) html += ideasHtml() + aiStatusHtml();
   if (s.kpi) html += kpiHtml(F);
   if (AI_STEPS.includes(s.key)) html += aiHtml(s);
-  if (s.fields.length) html += `<div class="sect"><h3>記録 <span class="eyebrow">この工程の入力欄</span></h3><div class="grid" id="fields">${s.fields.map(f => fieldHtml(f, F[f.k])).join("")}</div></div>`;
+  if (s.fields.length) html += `<div class="sect"><h3>記録 <span class="eyebrow">この工程の入力欄</span></h3><div class="grid" id="fields">${s.fields.map(f => fieldHtml(f, F[f.k], isAiFilled(f.k, F))).join("")}</div></div>`;
   if (s.outreach) html += outreachHtml(F);
   if (s.attendance) html += attendanceHtml();
   html += commentsHtml(s.key);
@@ -528,8 +529,6 @@ function bindStep(s){
   document.querySelectorAll("[data-cdel]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.cdel; const c = comments.find(x => x.id===id); if (!c || c.authorId!==me) return; if (!confirm("このコメントを削除しますか？")) return;
     guard(async () => { if (db) await db.doc(`meetings/${curId}/comments/${id}`).delete(); else { comments = comments.filter(x => x.id!==id); renderStep(); } if (s.key==="t60") scheduleAi(); }, "コメントを削除しました"); });
   const ar = $("#aiRun"); if (ar) ar.onclick = () => runAi(false);
-  const aa = $("#aiApply"); if (aa) aa.onclick = () => applyAi(s, false);
-  const ab = $("#aiApplyAll"); if (ab) ab.onclick = () => applyAi(s, true);
 }
 
 /* ---------- AI（企画アイデア・コメント → T−45〜T−14 の下書き） ---------- */
@@ -566,41 +565,45 @@ async function runAi(auto){
     const ai = { at: now(), by: me || "", hash, counts: { ideas: payload.ideas.length, comments: payload.comments.length }, model: j.model || "", summary: r.summary || "",
       steps: Object.fromEntries(AI_STEPS.map(k => [k, r[k] || {}])) };
     if (curId !== meetingId) return;
-    if (db) await db.doc(`meetings/${meetingId}`).update({ ai }); else cur.ai = ai;
-    if (!auto) toast("AIの整理を更新しました");
+    // 入力欄へ自動反映：空欄、または前回AIが入れたままの欄だけを書き換える（人が編集した欄は触らない）
+    const F0 = cur.fields || {}, prevFilled = (cur.ai && cur.ai.filled) || {}, fieldsPatch = {}, filled = {};
+    AI_STEPS.forEach(k => { const out = ai.steps[k] || {}; STEPS.find(x => x.key===k).fields.forEach(f => { if (f.t === "check") return;
+      const curS = F0[f.k] == null ? "" : String(F0[f.k]); const owned = curS === "" || (prevFilled[f.k] !== undefined && curS === String(prevFilled[f.k]));
+      if (!owned) return; const v = normalizeAiValue(f, out[f.k]); if (v === "" && curS === "") return;
+      fieldsPatch[f.k] = v; filled[f.k] = v; }); });
+    ai.filled = filled;
+    const patch = { ai, fields: fieldsPatch, updatedAt: now(), updatedBy: "ai" };
+    if (db) await db.doc(`meetings/${meetingId}`).update(patch); else { cur.ai = ai; Object.assign(cur.fields ||= {}, fieldsPatch); cur.updatedAt = patch.updatedAt; cur.updatedBy = "ai"; }
+    const n = Object.keys(fieldsPatch).length;
+    if (!auto) toast(n ? `AIが${n}項目を自動入力しました` : "AIの整理を更新しました（入力欄の変更はありません）");
   } catch(e){ console.error(e); toast("AIの整理に失敗しました：" + (e && e.message || e)); }
   finally { aiBusy = false; if (curId === meetingId) renderStep(); }
 }
 function aiStatusHtml(){
   if (!AI_ENDPOINT && !(cur && cur.ai)) return "";
   const ai = cur.ai; const stale = ai && aiInputsReady() && ai.hash !== aiHash();
-  const st = aiBusy ? "AIが整理中です…" : ai ? `AI整理 ${fmtDT(ai.at)} 更新（アイデア${ai.counts?.ideas ?? "–"}件・コメント${ai.counts?.comments ?? "–"}件）→ T−45〜T−14 に反映済み${stale ? " ・ 新しい投稿があります" : ""}` : "AI整理：まだ生成されていません（投稿すると自動で生成されます）";
+  const st = aiBusy ? "AIが整理中です…" : ai ? `AI整理 ${fmtDT(ai.at)} 更新（アイデア${ai.counts?.ideas ?? "–"}件・コメント${ai.counts?.comments ?? "–"}件）→ T−45〜T−14 の入力欄に自動入力済み${stale ? " ・ 新しい投稿があります" : ""}` : "AI整理：まだ生成されていません（投稿すると自動で T−45〜T−14 の入力欄を埋めます）";
   return `<div class="ai-line"><span class="${stale ? "stale" : ""}">${esc(st)}</span>${ai && ai.summary ? `<span>${esc(ai.summary)}</span>` : ""}${AI_ENDPOINT ? `<span class="btns"><button class="btn small" id="aiRun" ${aiBusy ? "disabled" : ""}>${ai ? "今すぐ更新" : "今すぐ生成"}</button></span>` : ""}</div>`;
 }
+function normalizeAiValue(f, v){
+  const t = v == null ? "" : String(v).trim(); if (t === "") return "";
+  if (f.t === "select") return f.opts.includes(t) ? t : "";
+  if (f.t === "number"){ const n = parseInt(t.replace(/[^0-9]/g, ""), 10); return isNaN(n) ? "" : n; }
+  if (f.t === "date") return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : "";
+  return t;
+}
+function isAiFilled(k, F){ const filled = cur && cur.ai && cur.ai.filled; if (!filled || filled[k] === undefined || filled[k] === "") return false; const v = F[k]; return v != null && String(v) !== "" && String(v) === String(filled[k]); }
 function aiHtml(s){
-  const ai = cur.ai; const st = ai && ai.steps && ai.steps[s.key] || null;
-  if (!AI_ENDPOINT && !ai) return "";
+  const ai = cur.ai; if (!AI_ENDPOINT && !ai) return "";
+  const st = ai && ai.steps && ai.steps[s.key] || null, F = cur.fields || {};
   const stale = ai && aiInputsReady() && ai.hash !== aiHash();
-  const status = aiBusy ? "AIが整理中です…" : ai ? `${fmtDT(ai.at)} 更新（アイデア${ai.counts?.ideas ?? "–"}件・コメント${ai.counts?.comments ?? "–"}件）${stale ? " ・ T−60に新しい投稿があります" : ""}` : "まだ生成されていません";
-  const rows = st ? s.fields.filter(f => f.t !== "check" && st[f.k] !== undefined && String(st[f.k]).trim() !== "").map(f => `<dt>${esc(f.l)}</dt><dd>${esc(st[f.k])}</dd>`).join("") : "";
-  const body = rows ? `<dl>${rows}</dl>` : `<div class="note">${ai ? "この工程に反映できる内容はまだありません。" : "T−60 の企画アイデア・コメントをもとに、AIがこの工程の下書きを作成します。"}</div>`;
-  const note = st && st.note ? `<div class="note">${esc(st.note)}</div>` : "";
-  const btns = `<span class="btns">${rows ? `<button class="btn small" id="aiApply">空欄に取り込む</button><button class="btn small" id="aiApplyAll">すべて取り込む</button>` : ""}${AI_ENDPOINT ? `<button class="btn small" id="aiRun" ${aiBusy ? "disabled" : ""}>${aiBusy ? "生成中…" : "再生成"}</button>` : ""}</span>`;
-  return `<div class="ai ${aiBusy ? "busy" : ""}"><div class="ai-h"><h4>AIによる整理</h4><span class="st ${stale ? "stale" : ""}">${esc(status)}</span>${btns}</div>${body}${note}</div>`;
+  const status = aiBusy ? "AIが整理中です…" : ai ? `${fmtDT(ai.at)} に自動入力（アイデア${ai.counts?.ideas ?? "–"}件・コメント${ai.counts?.comments ?? "–"}件）${stale ? " ・ T−60に新しい投稿があります" : ""}` : "まだ生成されていません";
+  const filledLabels = s.fields.filter(f => isAiFilled(f.k, F)).map(f => f.l);
+  const body = ai ? (filledLabels.length ? `<div class="note">AIが入力した欄：${esc(filledLabels.join("・"))}。編集して保存した欄は、以後AIが上書きしません。空にして保存すると次回からAIが再び入力します。</div>` : `<div class="note">この工程でAIが入力している欄はありません（手入力済みか、該当する投稿がありません）。</div>`) : `<div class="note">T−60 の企画アイデア・コメントをもとに、AIがこの工程の入力欄を自動で埋めます。</div>`;
+  const note = st && st.note ? `<div class="note">AIの申し送り：${esc(st.note)}</div>` : "";
+  const btns = AI_ENDPOINT ? `<span class="btns"><button class="btn small" id="aiRun" ${aiBusy ? "disabled" : ""}>${aiBusy ? "生成中…" : "再生成"}</button></span>` : "";
+  return `<div class="ai ${aiBusy ? "busy" : ""}"><div class="ai-h"><h4>AIによる自動入力</h4><span class="st ${stale ? "stale" : ""}">${esc(status)}</span>${btns}</div>${body}${note}</div>`;
 }
-function applyAi(s, overwrite){
-  const st = cur.ai && cur.ai.steps && cur.ai.steps[s.key]; if (!st) return;
-  let n = 0;
-  s.fields.forEach(f => { const v = st[f.k]; if (v === undefined || String(v).trim() === "" || f.t === "check") return; const el = document.querySelector(`#fields [data-k="${f.k}"]`); if (!el) return;
-    if (!overwrite && String(el.value || "").trim() !== "") return;
-    if (f.t === "select"){ if (![...el.options].some(o => o.value === v)) return; el.value = v; }
-    else if (f.t === "number"){ const num = parseInt(String(v).replace(/[^0-9]/g, ""), 10); if (isNaN(num)) return; el.value = num; }
-    else if (f.t === "date"){ if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; el.value = v; }
-    else el.value = v;
-    n++; });
-  toast(n ? `${n}項目を入力欄に反映しました。「保存」で確定してください` : "反映できる項目がありませんでした");
-}
-
 /* ---------- データ購読 ---------- */
 function snapToArr(snap){ return snap.docs.filter(d => d.exists).map(d => ({id: d.id, ...d.data()})); }
 function selectMeeting(id){
