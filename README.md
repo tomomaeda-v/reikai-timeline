@@ -53,6 +53,26 @@ NPO法人 外国人在留支援コンソーシアムの例会を、標準タイ�
 公開URLと共通パスワードを理事に共有します。初回アクセス時に「あなた」で自分の名前を選ぶと、以後そのブラウザでは自動で選択されます。
 名簿の追加・変更は画面右上の「名簿」ボタンから行えます（初回はアプリ内の既定名簿が自動登録されます）。
 
+## AI連携（任意）：アイデア・コメントを T−45〜T−14 の下書きに自動反映
+
+T−60 の「企画アイデア」「連絡・コメント」を Claude が読み、T−45（テーマ・企画）／T−30（登壇者・告知）／T−14（集客レビュー）の入力欄の下書きを自動で作ります。
+各工程の画面に「AIによる整理」として表示され、「空欄に取り込む」「すべて取り込む」で入力欄に流し込み、「保存」で確定します（AIが入力欄を勝手に上書きすることはありません）。
+アイデアやコメントを投稿・削除すると数秒後に自動で再生成されます。「今すぐ更新」「再生成」で手動更新もできます。
+
+API キーをブラウザに置かないため、Google Apps Script（GAS）を中継サーバーにします。設定しない場合、AI関連の表示は出ません。
+
+1. https://console.anthropic.com で API キーを作成
+2. https://script.google.com で新しいプロジェクトを作り、`gas/Code.gs` の内容を貼り付けて保存
+3. **プロジェクトの設定 → スクリプト プロパティ** に追加
+   - `ANTHROPIC_API_KEY`：手順1のキー
+   - `FIREBASE_API_KEY`：`firebase-config.js` の `apiKey`（アプリにログイン済みの人だけが呼べるようにする検証に使います）
+   - `MODEL`（任意）：既定は `claude-opus-5`
+4. エディタで `test_analyze` を実行し、ログに JSON が出ることを確認（初回は権限の承認が求められます）
+5. **デプロイ → 新しいデプロイ → ウェブアプリ**。「実行するユーザー：自分」「アクセスできるユーザー：全員」でデプロイ
+6. 表示された **ウェブアプリのURL** を `firebase-config.js` の `AI_ENDPOINT` に設定してコミット
+
+`Code.gs` を修正したときは「デプロイを管理 → 編集 → 新バージョン」で再デプロイしないと反映されません。
+
 ## 共同作業者を追加する（コードの修正）
 
 リポジトリの **Settings → Collaborators → Add people** でGitHubアカウントを招待します。
@@ -74,7 +94,8 @@ python3 -m http.server 8000
 
 ```
 config/members                 { list: [{id, name, role}] }
-meetings/{id}                  { title, date, venue, steps:{t60:{done,by,at},...}, fields:{...} }
+meetings/{id}                  { title, date, venue, steps:{t60:{done,by,at},...}, fields:{...},
+                                 ai:{at, by, hash, counts, summary, steps:{t45:{...}, t30:{...}, t14:{...}}} }  ← AI連携を使う場合
 meetings/{id}/ideas/{id}       { author, authorId, category, text, createdAt, likes:{memberId:true} }
 meetings/{id}/comments/{id}    { step, author, authorId, text, createdAt }
 meetings/{id}/outreach/{memberId}   { name, planned, result, note }

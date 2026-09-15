@@ -124,6 +124,35 @@ a{color:var(--accent)}
 .sect h3 .eyebrow{text-transform:none;letter-spacing:.02em}
 
 /* ideas */
+.idea-groups{display:flex;flex-direction:column;gap:14px}
+.idea-group{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.idea-group .g-h{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.idea-group .g-h .cat{font-size:12px;padding:2px 9px;border-radius:4px;font-weight:600;white-space:nowrap}
+.idea-group .g-h .n{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.idea-group .g-b{display:flex;flex-direction:column;gap:6px;padding:8px}
+.idea-group .g-b .idea{grid-template-columns:1fr auto}
+.idea-group .g-empty{color:var(--faint);font-size:12.5px;padding:6px 12px 10px}
+.cat.c1{background:var(--accent-soft);color:var(--accent)}
+.cat.c2{background:var(--done-soft);color:var(--done)}
+.cat.c3{background:var(--soon-soft);color:var(--soon)}
+.cat.c4{background:var(--surface-2);color:var(--ink);border:1px solid var(--line)}
+.cat.c5{background:var(--late-soft);color:var(--late)}
+.cmt .h a{margin-left:8px;font-size:11.5px}
+/* AI */
+.ai{border:1px solid var(--accent);border-radius:8px;background:var(--accent-soft);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.ai .ai-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ai .ai-h h4{margin:0;font-size:13.5px;font-family:var(--display)}
+.ai .ai-h .st{font-size:11.5px;color:var(--muted)}
+.ai .ai-h .st.stale{color:var(--soon)}
+.ai .ai-h .btns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.ai dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:13px}
+.ai dt{color:var(--muted);font-size:12px;padding-top:2px}
+.ai dd{margin:0;white-space:pre-wrap;line-height:1.55;background:var(--surface);border-radius:6px;padding:6px 10px;border:1px solid var(--line)}
+.ai .note{font-size:12.5px;color:var(--muted)}
+.ai.busy{opacity:.7}
+@media (max-width:640px){.ai dl{grid-template-columns:1fr}}
+.ai-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);padding:8px 12px;border:1px dashed var(--line);border-radius:6px}
+.ai-line .btns{margin-left:auto}
 .idea-form{display:grid;grid-template-columns:170px 1fr auto;gap:10px;align-items:start}
 @media (max-width:640px){.idea-form{grid-template-columns:1fr}}
 .idea-form select,.idea-form textarea{background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
@@ -281,7 +310,8 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc as fsDoc, collection as fsCol, getDoc, setDoc, deleteDoc, addDoc, onSnapshot, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { firebaseConfig, SHARED_LOGIN_EMAIL } from "./firebase-config.js";
+import { firebaseConfig, SHARED_LOGIN_EMAIL, AI_ENDPOINT as _AI } from "./firebase-config.js";
+const AI_ENDPOINT = (typeof _AI === "string" ? _AI : "").trim();
 
 /* Firestore を薄くラップ（doc/collection/get/set/update/delete/onSnapshot） */
 function makeDb(fs){
@@ -310,7 +340,7 @@ function makeDb(fs){
 const STEPS = [
   {key:"t60", off:-60, label:"T−60", name:"企画アイデア募集開始", owner:"理事長 → 全理事",
    desc:"テーマ・登壇候補・集客方法・リアル参加を促す仕掛け・懇親会企画のアイデアを全理事から募集します。毎回1案で構いません。",
-   fields:[{k:"callSentAt",t:"date",l:"募集案内の送付日"},{k:"deadline",t:"date",l:"提出締切（目安 T−50）"}], ideas:true},
+   fields:[], ideas:true},
   {key:"t45", off:-45, label:"T−45", name:"テーマ・企画を決定", owner:"全理事（まとまらなければ理事長が最終決定）",
    desc:"集まったアイデアを集約し、テーマと企画の骨子を決めます。",
    fields:[{k:"theme",t:"text",l:"決定テーマ",wide:true},{k:"outline",t:"textarea",l:"構成・主要論点",wide:true},{k:"speakerCand",t:"textarea",l:"登壇候補（外部ゲスト可）"},{k:"socialPlan",t:"textarea",l:"交流・懇親会企画（リアル参加の価値）"},{k:"decidedHow",t:"select",l:"決定方法",opts:["","理事間で合意","理事長が最終決定"]}]},
@@ -334,6 +364,7 @@ const STEPS = [
    fields:[{k:"memberTotal",t:"number",l:"会員総数（参加率の分母）"},{k:"joined",t:"number",l:"外部参加者からの入会数"},{k:"good",t:"textarea",l:"良かった点"},{k:"improve",t:"textarea",l:"改善点・次回への申し送り"}], kpi:true},
 ];
 const CATS = ["テーマ","登壇候補","集客方法","リアル参加の仕掛け","懇親会・交流企画"];
+const AI_STEPS = ["t45","t30","t14"]; // AIの整理を表示する工程
 const DEFAULT_MEMBERS = [
   {id:"maeda",name:"前田 智之",role:"理事長"},{id:"kawasaki",name:"川崎",role:"理事"},{id:"iwanaga",name:"岩永",role:"理事"},
   {id:"ando",name:"安藤",role:"理事"},{id:"miura",name:"三浦",role:"理事"},{id:"yamashita",name:"山下",role:"理事"},
@@ -344,6 +375,7 @@ const DEFAULT_MEMBERS = [
 let db = null, members = DEFAULT_MEMBERS.slice(), meetings = [], cur = null, curId = null, curStep = "t60", me = null;
 let ideas = [], comments = [], outreach = [], attendance = [];
 let unsubs = [];
+let aiBusy = false, aiTimer = null, aiLoaded = {ideas:false, comments:false}; const aiAutoTried = new Set();
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const todayStr = () => { const d = new Date(); return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-"); };
@@ -407,23 +439,28 @@ function renderStep(){
   const dueLine = st==="done" ? `完了 ${meta.at ? fmt(meta.at.slice(0,10)) : ""} ${esc(memberName(meta.by||""))}` : d>0 ? `あと${d}日` : d===0 ? "本日が期限" : `${-d}日超過`;
   let html = `<div class="card-h"><div class="lead"><span class="eyebrow">${s.label} ・ ${esc(s.owner)}</span><h2>${esc(s.name)}</h2><div class="who">担当：${esc(s.owner)}</div></div><div class="due">期日<b>${fmt(due)}</b><span class="pill ${st}">${STATE_LABEL[st]}</span> ${esc(dueLine)}</div></div><div class="card-b">`;
   html += `<p class="desc">${esc(s.desc)}</p>`;
-  if (s.ideas) html += ideasHtml();
+  if (s.ideas) html += ideasHtml() + aiStatusHtml();
   if (s.kpi) html += kpiHtml(F);
-  html += `<div class="sect"><h3>記録 <span class="eyebrow">この工程の入力欄</span></h3><div class="grid" id="fields">${s.fields.map(f => fieldHtml(f, F[f.k])).join("")}</div></div>`;
+  if (AI_STEPS.includes(s.key)) html += aiHtml(s);
+  if (s.fields.length) html += `<div class="sect"><h3>記録 <span class="eyebrow">この工程の入力欄</span></h3><div class="grid" id="fields">${s.fields.map(f => fieldHtml(f, F[f.k])).join("")}</div></div>`;
   if (s.outreach) html += outreachHtml(F);
   if (s.attendance) html += attendanceHtml();
   html += commentsHtml(s.key);
-  html += `<div class="actions"><button class="btn primary" id="saveBtn">保存</button><button class="btn" id="doneBtn">${meta.done?"完了を取り消す":"この工程を完了にする"}</button><span class="meta">${cur.updatedAt ? `最終更新 ${new Date(cur.updatedAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} ${esc(memberName(cur.updatedBy||""))}` : ""}</span></div></div>`;
+  html += `<div class="actions">${s.fields.length ? `<button class="btn primary" id="saveBtn">保存</button>` : ""}<button class="btn" id="doneBtn">${meta.done?"完了を取り消す":"この工程を完了にする"}</button><span class="meta">${cur.updatedAt ? `最終更新 ${new Date(cur.updatedAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} ${esc(memberName(cur.updatedBy||""))}` : ""}</span></div></div>`;
   card.innerHTML = html;
   bindStep(s);
+  maybeAutoAi(s);
 }
 function ideasHtml(){
   const byCat = {}; ideas.forEach(i => (byCat[i.category] ||= []).push(i));
   const submitted = new Set(ideas.map(i => i.authorId));
   const directors = members.filter(m => m.role !== "事務局");
   const roster = `<div class="roster">${directors.map(m => `<span class="chip ${submitted.has(m.id)?"on":""}">${esc(m.name)}</span>`).join("")}</div>`;
-  const list = ideas.length ? `<div class="ideas">${ideas.map(i => { const likes = Object.keys(i.likes||{}).filter(k => i.likes[k]); const mine = me && i.likes && i.likes[me];
-    return `<div class="idea"><span class="cat c${CATS.indexOf(i.category)+1}">${esc(i.category)}</span><div><div class="txt">${esc(i.text)}</div><div class="by">${esc(i.author)} ・ ${i.createdAt ? new Date(i.createdAt).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"}) : ""}${i.authorId===me?` ・ <a href="#" data-del="${esc(i.id)}">削除</a>`:""}</div></div><button class="like ${mine?"on":""}" data-like="${esc(i.id)}" title="賛同">👍 ${likes.length}</button></div>`; }).join("")}</div>` : `<div class="empty">まだアイデアがありません。最初の1案をどうぞ。</div>`;
+  const row = i => { const likes = Object.keys(i.likes||{}).filter(k => i.likes[k]); const mine = me && i.likes && i.likes[me];
+    return `<div class="idea"><div><div class="txt">${esc(i.text)}</div><div class="by">${esc(i.author)} ・ ${i.createdAt ? new Date(i.createdAt).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"}) : ""}${i.authorId===me?` ・ <a href="#" data-del="${esc(i.id)}">削除</a>`:""}</div></div><button class="like ${mine?"on":""}" data-like="${esc(i.id)}" title="賛同">👍 ${likes.length}</button></div>`; };
+  const group = (cat, ci, arr) => `<div class="idea-group"><div class="g-h"><span class="cat c${ci}">${esc(cat)}</span><span class="n">${arr.length}件</span></div>${arr.length ? `<div class="g-b">${arr.map(row).join("")}</div>` : `<div class="g-empty">まだ投稿がありません</div>`}</div>`;
+  const others = ideas.filter(i => !CATS.includes(i.category));
+  const list = ideas.length ? `<div class="idea-groups">${CATS.map((c, ci) => group(c, ci+1, byCat[c] || [])).join("")}${others.length ? group("その他", 4, others) : ""}</div>` : `<div class="empty">まだアイデアがありません。最初の1案をどうぞ。</div>`;
   return `<div class="sect"><h3>企画アイデア <span class="eyebrow">提出 ${submitted.size} / ${directors.length}名 ・ ${ideas.length}件</span></h3>${roster}
     <div class="idea-form"><select id="ideaCat">${CATS.map(c => `<option>${c}</option>`).join("")}</select><textarea id="ideaText" placeholder="テーマ案・登壇候補・集客のアイデアなど（1案で構いません）"></textarea><button class="btn primary" id="ideaAdd">投稿</button></div>${list}</div>`;
 }
@@ -457,7 +494,7 @@ function kpiHtml(F){
 }
 function commentsHtml(key){
   const list = comments.filter(c => c.step===key).sort((a,b) => (a.createdAt||"").localeCompare(b.createdAt||""));
-  return `<div class="sect"><h3>連絡・コメント <span class="eyebrow">${list.length}件</span></h3><div class="comments">${list.map(c => `<div class="cmt"><div class="h"><b>${esc(c.author)}</b> ・ ${c.createdAt ? new Date(c.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}</div><div class="b">${esc(c.text)}</div></div>`).join("")}</div>
+  return `<div class="sect"><h3>連絡・コメント <span class="eyebrow">${list.length}件</span></h3><div class="comments">${list.map(c => `<div class="cmt"><div class="h"><b>${esc(c.author)}</b> ・ ${c.createdAt ? new Date(c.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : ""}${c.authorId===me?`<a href="#" data-cdel="${esc(c.id)}">削除</a>`:""}</div><div class="b">${esc(c.text)}</div></div>`).join("")}</div>
     <div class="cmt-form"><textarea id="cmtText" placeholder="この工程についての連絡・確認・依頼"></textarea><button class="btn" id="cmtAdd">送信</button></div></div>`;
 }
 
@@ -471,14 +508,14 @@ async function guard(fn, okMsg){
   catch(e){ console.error(e); const code = e && e.code; toast(code==="quota_exceeded" ? "保存容量の上限に達しました" : code==="unavailable" ? "一時的に保存できません。もう一度お試しください" : "保存に失敗しました"); }
 }
 function bindStep(s){
-  $("#saveBtn").onclick = () => { if(!needMe()) return; const fields = collectFields(s); guard(async () => {
+  const sb = $("#saveBtn"); if (sb) sb.onclick = () => { if(!needMe()) return; const fields = collectFields(s); guard(async () => {
     if (db) await db.doc(`meetings/${curId}`).update({fields, updatedAt: now(), updatedBy: me});
     else { Object.assign(cur.fields ||= {}, fields); cur.updatedAt = now(); cur.updatedBy = me; renderStep(); } }, "保存しました"); };
   $("#doneBtn").onclick = () => { if(!needMe()) return; const wasDone = (cur.steps||{})[s.key]?.done; const fields = collectFields(s); guard(async () => {
     const patch = {fields, steps:{[s.key]: wasDone ? {done:false} : {done:true, by:me, at: now()}}, updatedAt: now(), updatedBy: me};
     if (db) await db.doc(`meetings/${curId}`).update(patch); else { Object.assign(cur.fields ||= {}, fields); (cur.steps ||= {})[s.key] = patch.steps[s.key]; renderRail(); renderStep(); } }, wasDone ? "完了を取り消しました" : `${s.label} を完了にしました`); };
   const ia = $("#ideaAdd"); if (ia) ia.onclick = () => { if(!needMe()) return; const text = $("#ideaText").value.trim(); if(!text) return toast("内容を入力してください"); const doc = {author: memberName(me), authorId: me, category: $("#ideaCat").value, text, createdAt: now(), likes:{}};
-    guard(async () => { if (db) await db.collection(`meetings/${curId}/ideas`).add(doc); else { ideas.push({...doc, id:"local"+Date.now()}); renderStep(); } }, "アイデアを投稿しました"); };
+    guard(async () => { if (db) await db.collection(`meetings/${curId}/ideas`).add(doc); else { ideas.push({...doc, id:"local"+Date.now()}); renderStep(); } scheduleAi(); }, "アイデアを投稿しました"); };
   document.querySelectorAll("[data-like]").forEach(b => b.onclick = () => { if(!needMe()) return; const id = b.dataset.like, i = ideas.find(x => x.id===id); const on = !(i.likes && i.likes[me]);
     guard(async () => { if (db) await db.doc(`meetings/${curId}/ideas/${id}`).update({likes:{[me]: on}}); else { (i.likes ||= {})[me] = on; renderStep(); } }); });
   document.querySelectorAll("[data-del]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.del; guard(async () => { if (db) await db.doc(`meetings/${curId}/ideas/${id}`).delete(); else { ideas = ideas.filter(x => x.id!==id); renderStep(); } }, "削除しました"); });
@@ -487,21 +524,95 @@ function bindStep(s){
   const at = $("#atSave"); if (at) at.onclick = () => { if(!needMe()) return; const doc = {name: memberName(me), status: $("#atStatus").value, social: $("#atSocial").checked, guest: $("#atGuest").value.trim(), updatedAt: now()};
     guard(async () => { if (db) await db.doc(`meetings/${curId}/attendance/${me}`).set(doc); else { attendance = attendance.filter(o => o.id!==me).concat([{...doc, id:me}]); renderStep(); } }, "出欠を登録しました"); };
   $("#cmtAdd").onclick = () => { if(!needMe()) return; const text = $("#cmtText").value.trim(); if(!text) return; const doc = {step: s.key, author: memberName(me), authorId: me, text, createdAt: now()};
-    guard(async () => { if (db) await db.collection(`meetings/${curId}/comments`).add(doc); else { comments.push({...doc, id:"c"+Date.now()}); renderStep(); } }, "送信しました"); };
+    guard(async () => { if (db) await db.collection(`meetings/${curId}/comments`).add(doc); else { comments.push({...doc, id:"c"+Date.now()}); renderStep(); } if (s.key==="t60") scheduleAi(); }, "送信しました"); };
+  document.querySelectorAll("[data-cdel]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.cdel; const c = comments.find(x => x.id===id); if (!c || c.authorId!==me) return; if (!confirm("このコメントを削除しますか？")) return;
+    guard(async () => { if (db) await db.doc(`meetings/${curId}/comments/${id}`).delete(); else { comments = comments.filter(x => x.id!==id); renderStep(); } if (s.key==="t60") scheduleAi(); }, "コメントを削除しました"); });
+  const ar = $("#aiRun"); if (ar) ar.onclick = () => runAi(false);
+  const aa = $("#aiApply"); if (aa) aa.onclick = () => applyAi(s, false);
+  const ab = $("#aiApplyAll"); if (ab) ab.onclick = () => applyAi(s, true);
+}
+
+/* ---------- AI（企画アイデア・コメント → T−45〜T−14 の下書き） ---------- */
+const fmtDT = iso => iso ? new Date(iso).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
+const t60Comments = () => comments.filter(c => c.step==="t60").sort((a,b) => (a.createdAt||"").localeCompare(b.createdAt||""));
+function aiHash(){ const src = JSON.stringify([ideas.map(i => [i.category, i.text]).sort(), t60Comments().map(c => c.text)]); let h = 5381; for (let i = 0; i < src.length; i++) h = ((h * 33) ^ src.charCodeAt(i)) >>> 0; return h.toString(36) + ":" + src.length; }
+const aiInputsReady = () => (!db || (aiLoaded.ideas && aiLoaded.comments)) && (ideas.length + t60Comments().length) > 0;
+function scheduleAi(){ if (!AI_ENDPOINT) return; clearTimeout(aiTimer); aiTimer = setTimeout(() => runAi(true), 4000); }
+function maybeAutoAi(s){
+  if (!AI_ENDPOINT || !cur || aiBusy || !AI_STEPS.includes(s.key) || !aiInputsReady()) return;
+  const h = aiHash(); if (cur.ai && cur.ai.hash === h) return;
+  const key = curId + ":" + h; if (aiAutoTried.has(key)) return; aiAutoTried.add(key);
+  runAi(true);
+}
+async function runAi(auto){
+  if (!AI_ENDPOINT) return toast("AI連携が設定されていません");
+  if (!cur || aiBusy) return;
+  if (!aiInputsReady()){ if (!auto) toast("アイデアかコメントを先に投稿してください"); return; }
+  const meetingId = curId, hash = aiHash();
+  aiBusy = true; renderStep();
+  try {
+    const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : "";
+    const F = cur.fields || {};
+    const payload = { idToken,
+      meeting: { title: cur.title, date: cur.date, venue: cur.venue || "" },
+      ideas: ideas.map(i => ({ category: i.category, text: i.text, author: i.author, likes: Object.values(i.likes||{}).filter(Boolean).length })),
+      comments: t60Comments().map(c => ({ author: c.author, text: c.text, at: c.createdAt || "" })),
+      current: Object.fromEntries(AI_STEPS.flatMap(k => STEPS.find(x => x.key===k).fields.map(f => [f.k, F[f.k] ?? ""]))) };
+    const res = await fetch(AI_ENDPOINT, { method: "POST", body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const j = await res.json();
+    if (!j || !j.ok) throw new Error((j && j.error) || "AIの応答が不正です");
+    const r = j.result || {};
+    const ai = { at: now(), by: me || "", hash, counts: { ideas: payload.ideas.length, comments: payload.comments.length }, model: j.model || "", summary: r.summary || "",
+      steps: Object.fromEntries(AI_STEPS.map(k => [k, r[k] || {}])) };
+    if (curId !== meetingId) return;
+    if (db) await db.doc(`meetings/${meetingId}`).update({ ai }); else cur.ai = ai;
+    if (!auto) toast("AIの整理を更新しました");
+  } catch(e){ console.error(e); toast("AIの整理に失敗しました：" + (e && e.message || e)); }
+  finally { aiBusy = false; if (curId === meetingId) renderStep(); }
+}
+function aiStatusHtml(){
+  if (!AI_ENDPOINT && !(cur && cur.ai)) return "";
+  const ai = cur.ai; const stale = ai && aiInputsReady() && ai.hash !== aiHash();
+  const st = aiBusy ? "AIが整理中です…" : ai ? `AI整理 ${fmtDT(ai.at)} 更新（アイデア${ai.counts?.ideas ?? "–"}件・コメント${ai.counts?.comments ?? "–"}件）→ T−45〜T−14 に反映済み${stale ? " ・ 新しい投稿があります" : ""}` : "AI整理：まだ生成されていません（投稿すると自動で生成されます）";
+  return `<div class="ai-line"><span class="${stale ? "stale" : ""}">${esc(st)}</span>${ai && ai.summary ? `<span>${esc(ai.summary)}</span>` : ""}${AI_ENDPOINT ? `<span class="btns"><button class="btn small" id="aiRun" ${aiBusy ? "disabled" : ""}>${ai ? "今すぐ更新" : "今すぐ生成"}</button></span>` : ""}</div>`;
+}
+function aiHtml(s){
+  const ai = cur.ai; const st = ai && ai.steps && ai.steps[s.key] || null;
+  if (!AI_ENDPOINT && !ai) return "";
+  const stale = ai && aiInputsReady() && ai.hash !== aiHash();
+  const status = aiBusy ? "AIが整理中です…" : ai ? `${fmtDT(ai.at)} 更新（アイデア${ai.counts?.ideas ?? "–"}件・コメント${ai.counts?.comments ?? "–"}件）${stale ? " ・ T−60に新しい投稿があります" : ""}` : "まだ生成されていません";
+  const rows = st ? s.fields.filter(f => f.t !== "check" && st[f.k] !== undefined && String(st[f.k]).trim() !== "").map(f => `<dt>${esc(f.l)}</dt><dd>${esc(st[f.k])}</dd>`).join("") : "";
+  const body = rows ? `<dl>${rows}</dl>` : `<div class="note">${ai ? "この工程に反映できる内容はまだありません。" : "T−60 の企画アイデア・コメントをもとに、AIがこの工程の下書きを作成します。"}</div>`;
+  const note = st && st.note ? `<div class="note">${esc(st.note)}</div>` : "";
+  const btns = `<span class="btns">${rows ? `<button class="btn small" id="aiApply">空欄に取り込む</button><button class="btn small" id="aiApplyAll">すべて取り込む</button>` : ""}${AI_ENDPOINT ? `<button class="btn small" id="aiRun" ${aiBusy ? "disabled" : ""}>${aiBusy ? "生成中…" : "再生成"}</button>` : ""}</span>`;
+  return `<div class="ai ${aiBusy ? "busy" : ""}"><div class="ai-h"><h4>AIによる整理</h4><span class="st ${stale ? "stale" : ""}">${esc(status)}</span>${btns}</div>${body}${note}</div>`;
+}
+function applyAi(s, overwrite){
+  const st = cur.ai && cur.ai.steps && cur.ai.steps[s.key]; if (!st) return;
+  let n = 0;
+  s.fields.forEach(f => { const v = st[f.k]; if (v === undefined || String(v).trim() === "" || f.t === "check") return; const el = document.querySelector(`#fields [data-k="${f.k}"]`); if (!el) return;
+    if (!overwrite && String(el.value || "").trim() !== "") return;
+    if (f.t === "select"){ if (![...el.options].some(o => o.value === v)) return; el.value = v; }
+    else if (f.t === "number"){ const num = parseInt(String(v).replace(/[^0-9]/g, ""), 10); if (isNaN(num)) return; el.value = num; }
+    else if (f.t === "date"){ if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return; el.value = v; }
+    else el.value = v;
+    n++; });
+  toast(n ? `${n}項目を入力欄に反映しました。「保存」で確定してください` : "反映できる項目がありませんでした");
 }
 
 /* ---------- データ購読 ---------- */
 function snapToArr(snap){ return snap.docs.filter(d => d.exists).map(d => ({id: d.id, ...d.data()})); }
 function selectMeeting(id){
   curId = id; safeLS("reikai.meeting", id || "");
-  unsubs.forEach(u => u()); unsubs = []; ideas = []; comments = []; outreach = []; attendance = [];
+  unsubs.forEach(u => u()); unsubs = []; ideas = []; comments = []; outreach = []; attendance = []; aiLoaded = {ideas:false, comments:false}; clearTimeout(aiTimer);
   cur = meetings.find(m => m.id===id) || null;
   if (!cur){ renderMeetingSel(); renderRail(); renderStep(); return; }
   if (db){
     const onErr = e => console.warn("db", e);
     unsubs.push(db.doc(`meetings/${id}`).onSnapshot(snap => { if(!snap.exists) return; cur = {id, ...snap.data()}; const i = meetings.findIndex(m => m.id===id); if (i>=0) meetings[i] = cur; renderMeetingSel(); renderRail(); renderStep(); }, onErr));
-    unsubs.push(db.collection(`meetings/${id}/ideas`).orderBy("createdAt","asc").onSnapshot(s => { ideas = snapToArr(s); if (curStep==="t60") renderStep(); }, onErr));
-    unsubs.push(db.collection(`meetings/${id}/comments`).onSnapshot(s => { comments = snapToArr(s); renderStep(); }, onErr));
+    unsubs.push(db.collection(`meetings/${id}/ideas`).orderBy("createdAt","asc").onSnapshot(s => { ideas = snapToArr(s); aiLoaded.ideas = true; if (curStep==="t60" || AI_STEPS.includes(curStep)) renderStep(); }, onErr));
+    unsubs.push(db.collection(`meetings/${id}/comments`).onSnapshot(s => { comments = snapToArr(s); aiLoaded.comments = true; renderStep(); }, onErr));
     unsubs.push(db.collection(`meetings/${id}/outreach`).onSnapshot(s => { outreach = snapToArr(s); if (curStep==="t14") renderStep(); }, onErr));
     unsubs.push(db.collection(`meetings/${id}/attendance`).onSnapshot(s => { attendance = snapToArr(s); if (curStep==="day") renderStep(); }, onErr));
   }
