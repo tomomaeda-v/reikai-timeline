@@ -56,7 +56,8 @@ NPO法人 外国人在留支援コンソーシアムの例会を、標準タイ�
 ## AI連携（任意）：アイデア・コメントを T−45〜T−14 の下書きに自動反映
 
 T−60 の「企画アイデア」「連絡・コメント」を Claude が読み、T−45（テーマ・企画）／T−30（登壇者・告知）／T−14（集客レビュー）の入力欄を自動で埋めて保存します。
-AIが入れた欄にはラベルに「AI」の印が付きます。人が編集して保存した欄は以後AIが上書きしません（空にして保存すると次回からAIが再び入力します）。
+AIが入れた欄にはラベルに「AI」の印が付きます。人が書いた文章はそのまま残り、その後ろに「［AI］」として追記されます（1行の欄は「 ／ AI：」区切り）。再生成するとAIの部分だけが差し替わります。
+選択肢・数値・日付の欄は文章を結合できないため、空欄か前回AIが入れたままのときだけAIが書き換え、人が選んだ値は変えません。
 アイデアやコメントを投稿・削除すると数秒後に自動で再生成されます。「今すぐ更新」「再生成」で手動更新もできます。
 
 API キーをブラウザに置かないため、Google Apps Script（GAS）を中継サーバーにします。設定しない場合、AI関連の表示は出ません。
@@ -95,7 +96,7 @@ python3 -m http.server 8000
 ```
 config/members                 { list: [{id, name, role}] }
 meetings/{id}                  { title, date, venue, steps:{t60:{done,by,at},...}, fields:{...},
-                                 ai:{at, by, hash, counts, summary, steps:{t45:{...}, t30:{...}, t14:{...}}, filled:{fieldKey: value}} }  ← AI連携を使う場合。filled はAIが入れた値（人の編集を判定）
+                                 ai:{at, by, hash, counts, summary, steps:{t45:{...}, t30:{...}, t14:{...}}, filled:{fieldKey: value}} }  ← AI連携を使う場合。filled はAIが入れた値（再生成時にAI部分だけ差し替えるための記録）
 meetings/{id}/ideas/{id}       { author, authorId, category, text, createdAt, likes:{memberId:true} }
 meetings/{id}/comments/{id}    { step, author, authorId, text, createdAt }
 meetings/{id}/outreach/{memberId}   { name, planned, result, note }

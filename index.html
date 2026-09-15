@@ -430,7 +430,7 @@ function fieldHtml(f, v, aiBadge){
   if (f.t === "textarea") inp = `<textarea data-k="${f.k}">${esc(val)}</textarea>`;
   else if (f.t === "select") inp = `<select data-k="${f.k}">${f.opts.map(o => `<option ${o===val?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
   else inp = `<input type="${f.t}" data-k="${f.k}" value="${esc(val)}" ${f.t==="number"?'min="0" inputmode="numeric"':""}>`;
-  return `<div class="field ${f.wide||f.t==="textarea"?"wide":""}"><label>${esc(f.l)}${aiBadge?`<span class="ai-badge" title="AIが自動入力した内容です。編集して保存すると、以後AIは上書きしません">AI</span>`:""}</label>${inp}${f.hint?`<span class="hint">${esc(f.hint)}</span>`:""}</div>`;
+  return `<div class="field ${f.wide||f.t==="textarea"?"wide":""}"><label>${esc(f.l)}${aiBadge?`<span class="ai-badge" title="AIが自動入力した内容を含みます。自分で書いた文章は残り、［AI］以降の部分だけが再生成のたびに差し替わります">AI</span>`:""}</label>${inp}${f.hint?`<span class="hint">${esc(f.hint)}</span>`:""}</div>`;
 }
 function renderStep(){
   const card = $("#stepCard");
@@ -565,12 +565,16 @@ async function runAi(auto){
     const ai = { at: now(), by: me || "", hash, counts: { ideas: payload.ideas.length, comments: payload.comments.length }, model: j.model || "", summary: r.summary || "",
       steps: Object.fromEntries(AI_STEPS.map(k => [k, r[k] || {}])) };
     if (curId !== meetingId) return;
-    // 入力欄へ自動反映：空欄、または前回AIが入れたままの欄だけを書き換える（人が編集した欄は触らない）
+    // 入力欄へ自動反映：人が書いた文章は残し、その後ろにAIの文章を追記する。再生成時はAI部分だけ差し替える。
+    // 選択肢・数値・日付は結合できないため、空欄か前回AIが入れたままのときだけ書き換える。
     const F0 = cur.fields || {}, prevFilled = (cur.ai && cur.ai.filled) || {}, fieldsPatch = {}, filled = {};
     AI_STEPS.forEach(k => { const out = ai.steps[k] || {}; STEPS.find(x => x.key===k).fields.forEach(f => { if (f.t === "check") return;
-      const curS = F0[f.k] == null ? "" : String(F0[f.k]); const owned = curS === "" || (prevFilled[f.k] !== undefined && curS === String(prevFilled[f.k]));
-      if (!owned) return; const v = normalizeAiValue(f, out[f.k]); if (v === "" && curS === "") return;
-      fieldsPatch[f.k] = v; filled[f.k] = v; }); });
+      const curS = F0[f.k] == null ? "" : String(F0[f.k]); const v = normalizeAiValue(f, out[f.k]); const prevAi = prevFilled[f.k];
+      let nv;
+      if (f.t === "textarea" || f.t === "text"){ nv = joinAi(f, splitAi(f, curS, prevAi), String(v)); }
+      else { const owned = curS === "" || (prevAi !== undefined && curS === String(prevAi)); if (!owned) return; nv = v; }
+      if (String(nv) !== curS) fieldsPatch[f.k] = nv;
+      if (v !== "") filled[f.k] = v; }); });
     ai.filled = filled;
     const patch = { ai, fields: fieldsPatch, updatedAt: now(), updatedBy: "ai" };
     if (db) await db.doc(`meetings/${meetingId}`).update(patch); else { cur.ai = ai; Object.assign(cur.fields ||= {}, fieldsPatch); cur.updatedAt = patch.updatedAt; cur.updatedBy = "ai"; }
@@ -592,14 +596,28 @@ function normalizeAiValue(f, v){
   if (f.t === "date") return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : "";
   return t;
 }
-function isAiFilled(k, F){ const filled = cur && cur.ai && cur.ai.filled; if (!filled || filled[k] === undefined || filled[k] === "") return false; const v = F[k]; return v != null && String(v) !== "" && String(v) === String(filled[k]); }
+const AI_SEP = f => f.t === "textarea" ? "\n\n［AI］" : " ／ AI：";
+/* 現在の文章から前回のAI部分を取り除き、人が書いた部分だけを返す */
+function splitAi(f, curS, prevAi){
+  if (prevAi === undefined || prevAi === "") return curS.trim();
+  const pa = String(prevAi); if (curS === pa) return "";
+  const seg = AI_SEP(f) + pa, i = curS.indexOf(seg); if (i >= 0) return (curS.slice(0, i) + curS.slice(i + seg.length)).trim();
+  const j = curS.indexOf(pa); if (j >= 0) return (curS.slice(0, j) + curS.slice(j + pa.length)).trim(); // AI文の前後に人が書き足した場合
+  return curS.trim();
+}
+function joinAi(f, human, aiText){ if (!human) return aiText; if (!aiText) return human; return human + AI_SEP(f) + aiText; }
+function isAiFilled(k, F){
+  const filled = cur && cur.ai && cur.ai.filled; if (!filled || filled[k] === undefined || filled[k] === "") return false;
+  const v = F[k]; if (v == null || String(v) === "") return false; const f = STEPS.flatMap(x => x.fields).find(x => x.k === k); if (!f) return false;
+  return String(v) === String(filled[k]) || String(v).includes(AI_SEP(f) + String(filled[k]));
+}
 function aiHtml(s){
   const ai = cur.ai; if (!AI_ENDPOINT && !ai) return "";
   const st = ai && ai.steps && ai.steps[s.key] || null, F = cur.fields || {};
   const stale = ai && aiInputsReady() && ai.hash !== aiHash();
   const status = aiBusy ? "AIが整理中です…" : ai ? `${fmtDT(ai.at)} に自動入力（アイデア${ai.counts?.ideas ?? "–"}件・コメント${ai.counts?.comments ?? "–"}件）${stale ? " ・ T−60に新しい投稿があります" : ""}` : "まだ生成されていません";
   const filledLabels = s.fields.filter(f => isAiFilled(f.k, F)).map(f => f.l);
-  const body = ai ? (filledLabels.length ? `<div class="note">AIが入力した欄：${esc(filledLabels.join("・"))}。編集して保存した欄は、以後AIが上書きしません。空にして保存すると次回からAIが再び入力します。</div>` : `<div class="note">この工程でAIが入力している欄はありません（手入力済みか、該当する投稿がありません）。</div>`) : `<div class="note">T−60 の企画アイデア・コメントをもとに、AIがこの工程の入力欄を自動で埋めます。</div>`;
+  const body = ai ? (filledLabels.length ? `<div class="note">AIが入力した欄：${esc(filledLabels.join("・"))}。自分で書いた文章はそのまま残り、その後ろに「［AI］」として追記されます。再生成するとAIの部分だけ差し替わります。</div>` : `<div class="note">この工程でAIが入力している欄はありません（該当する投稿がありません）。</div>`) : `<div class="note">T−60 の企画アイデア・コメントをもとに、AIがこの工程の入力欄を自動で埋めます。</div>`;
   const note = st && st.note ? `<div class="note">AIの申し送り：${esc(st.note)}</div>` : "";
   const btns = AI_ENDPOINT ? `<span class="btns"><button class="btn small" id="aiRun" ${aiBusy ? "disabled" : ""}>${aiBusy ? "生成中…" : "再生成"}</button></span>` : "";
   return `<div class="ai ${aiBusy ? "busy" : ""}"><div class="ai-h"><h4>AIによる自動入力</h4><span class="st ${stale ? "stale" : ""}">${esc(status)}</span>${btns}</div>${body}${note}</div>`;
