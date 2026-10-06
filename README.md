@@ -22,6 +22,14 @@ NPO法人 外国人在留支援コンソーシアムの例会を、標準タイ�
 
 工程の内容や入力欄を変えたいときは `index.html` 内の `STEPS` 配列を編集してください。
 
+## 理念づくり（意見集約）ページ
+
+画面上部の「理念づくり」で切り替わる、例会とは独立したページです。新しい理念を決める会議の参考資料として、理事の意見を設問ごとに集めます。
+
+- 設問ごとに意見を投稿・👍で共感・自分の投稿の削除ができます。「キーワード」型の設問は同じ言葉を集計して表示します。
+- 「設定」で見出し・趣旨・締切・設問を変更できます（設問は1行1問、「設問｜補足」、行頭「#」でキーワード型）。
+- 「テキストをコピー」「印刷・PDF保存」で、設問ごとに賛同の多い順に並べた会議用の資料を出力できます。
+
 ## 初回セットアップ（約20分）
 
 ### 1. Firebase プロジェクトを作る
@@ -101,6 +109,8 @@ meetings/{id}/ideas/{id}       { author, authorId, category, text, createdAt, li
 meetings/{id}/comments/{id}    { step, author, authorId, text, createdAt }
 meetings/{id}/outreach/{memberId}   { name, planned, result, note }
 meetings/{id}/attendance/{memberId} { name, status, social, guest }
+rinen/main                     { title, intro, deadline, questions:[{id,label,hint,type?}] }   ← 理念づくりの設定
+rinen/main/posts/{id}          { q, text, author, authorId, createdAt, likes:{memberId:true} } ← 理念づくりの意見
 ```
 
 ## ライセンス

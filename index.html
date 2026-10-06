@@ -223,6 +223,59 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
 .login-box .desc{margin:0 0 6px}
 .login-err{color:var(--late);font-size:13px}
 .top .btn.logout{color:var(--muted)}
+/* 画面切替（例会タイムライン／理念づくり） */
+.views{display:flex;gap:2px;background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:2px}
+.views .vbtn{border:0;background:transparent;border-radius:5px;padding:4px 12px;font-size:12.5px;cursor:pointer;color:var(--muted);white-space:nowrap}
+.views .vbtn.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(20,30,45,.08);font-weight:500}
+.view-rinen .top-mid,.view-rinen .wrap{display:none}
+#rinen{display:none}
+.view-rinen #rinen{display:block}
+.rinen-in{max-width:960px;margin:0 auto;padding:22px 20px 60px;display:flex;flex-direction:column;gap:18px}
+.rinen-head{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 24px;display:flex;flex-direction:column;gap:10px}
+.rinen-head h2{font-size:21px}
+.rinen-head .intro{white-space:pre-wrap;color:var(--muted);max-width:70ch;margin:0}
+.rinen-head .bar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:13px;color:var(--muted)}
+.rinen-head .bar b{color:var(--ink);font-family:var(--mono)}
+.rinen-head .bar .btns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.rinen-head .deadline{font-family:var(--mono)}
+.rinen-head .deadline.late{color:var(--late)}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;display:flex;flex-direction:column;gap:12px}
+.q .q-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.q .q-h .qn{font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--accent-soft);padding:1px 8px;border-radius:999px}
+.q .q-h h3{font-size:16px}
+.q .q-h .cnt{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:auto}
+.q .hint{font-size:12.5px;color:var(--faint);margin:0}
+.q-form{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.q-form textarea,.q-form input{background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+.q-form textarea{min-height:64px;resize:vertical}
+.q-list{display:flex;flex-direction:column;gap:8px}
+.op{display:grid;grid-template-columns:1fr auto;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--ground);align-items:start}
+.op .txt{white-space:pre-wrap;line-height:1.6}
+.op .by{font-size:11.5px;color:var(--muted);margin-top:4px}
+.kw{display:flex;flex-wrap:wrap;gap:8px}
+.kw .k{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--ground);font-size:13.5px}
+.kw .k.hot{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:500}
+.kw .k .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.kw .k.hot .n{color:var(--accent)}
+.mine{font-size:12px;color:var(--muted)}
+.mine a{margin-left:6px}
+.rinen-foot{background:var(--surface);border:1px dashed var(--line-strong);border-radius:var(--radius);padding:16px 24px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.rinen-foot .btns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+#rinenPrint{display:none}
+@media print{
+  body.print-rinen{background:#fff;color:#000}
+  body.print-rinen .top,body.print-rinen .wrap,body.print-rinen #rinen > .rinen-in,body.print-rinen .toast{display:none!important}
+  body.print-rinen #rinen{display:block!important}
+  body.print-rinen #rinenPrint{display:block;max-width:none;padding:0 4mm;font-size:12px;line-height:1.6}
+  #rinenPrint h1{font-size:18px;margin:0 0 4px}
+  #rinenPrint .pm{color:#555;font-size:11px;margin-bottom:14px}
+  #rinenPrint h2{font-size:14px;margin:16px 0 6px;padding-bottom:3px;border-bottom:1px solid #999;break-after:avoid}
+  #rinenPrint ol{margin:0;padding-left:1.4em}
+  #rinenPrint li{margin:0 0 6px;break-inside:avoid;white-space:pre-wrap}
+  #rinenPrint li small{color:#555}
+  #rinenPrint .pk{display:flex;flex-wrap:wrap;gap:6px 14px}
+}
+@media (max-width:640px){.q-form{grid-template-columns:1fr}.rinen-in{padding:14px 12px 40px}.q,.rinen-head{padding:14px 16px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -245,6 +298,7 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
       <span class="eyebrow">NPO法人 外国人在留支援コンソーシアム</span>
       <h1>例会運営タイムライン</h1>
     </div>
+    <nav class="views" aria-label="画面の切り替え"><button class="vbtn active" data-view="timeline">例会タイムライン</button><button class="vbtn" data-view="rinen">理念づくり</button></nav>
     <div class="top-mid">
       <select id="meetingSel" aria-label="例会を選択"></select>
       <button class="btn small" id="editMeetingBtn">日程・会場</button>
@@ -272,6 +326,24 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
     <section class="card" id="stepCard"></section>
   </main>
 </div>
+
+<section id="rinen" aria-label="理念づくり 意見集約">
+  <div class="rinen-in" id="rinenBody"></div>
+  <div id="rinenPrint"></div>
+</section>
+
+<dialog id="rinenDlg">
+  <form method="dialog">
+    <div class="d-h"><h2>理念づくりの設定</h2></div>
+    <div class="d-b">
+      <div class="field"><label for="rdTitle">見出し</label><input id="rdTitle" placeholder="新しい理念づくり"></div>
+      <div class="field"><label for="rdIntro">趣旨（理事への説明）</label><textarea id="rdIntro" style="min-height:90px"></textarea></div>
+      <div class="field"><label for="rdDeadline">意見の締切</label><input id="rdDeadline" type="date"><span class="hint">空欄なら締切を表示しません</span></div>
+      <div class="field"><label for="rdQ">設問（1行に1問。「設問｜補足説明」の形。行頭に「#」を付けると短いキーワードを集める設問になります）</label><textarea id="rdQ" class="members-edit"></textarea><span class="hint">行を消すと設問が非表示になります。投稿は残ります。</span></div>
+    </div>
+    <div class="d-f"><button class="btn" value="cancel">キャンセル</button><button class="btn primary" value="ok">保存</button></div>
+  </form>
+</dialog>
 
 <dialog id="meetingDlg">
   <form method="dialog">
@@ -665,7 +737,103 @@ $("#membersDlg").addEventListener("close", () => { if ($("#membersDlg").returnVa
   const lines = $("#mList").value.split("\n").map(l => l.trim()).filter(Boolean);
   const list = lines.map(l => { const [name, role] = l.split(/[,、，]/).map(x => (x||"").trim()); const ex = members.find(m => m.name===name); return {id: ex ? ex.id : "m" + Math.random().toString(36).slice(2,8), name, role: role || "理事"}; });
   guard(async () => { if (db) await db.doc("config/members").set({list, updatedAt: now()}); else { members = list; renderMe(); renderStep(); } }, "名簿を保存しました"); });
-$("#meSel").onchange = e => { me = e.target.value || null; safeLS("reikai.me", me||""); renderStep(); };
+$("#meSel").onchange = e => { me = e.target.value || null; safeLS("reikai.me", me||""); renderStep(); renderRinen(); };
+
+/* ---------- 理念づくり（意見集約） ---------- */
+const RINEN_DEFAULT = {
+  title: "新しい理念づくり",
+  intro: "コンソーシアムの新しい理念（使命・目指す姿・大切にする価値観）を策定するにあたり、理事の皆さまのお考えを集めます。\nここで決めるのではなく、理念を決める会議の参考資料として使います。1つの設問だけでも、短い一言でも構いません。共感する意見には 👍 を押してください。",
+  deadline: "",
+  questions: [
+    {id:"q1", label:"私たちは何のために存在するのか（使命）", hint:"誰の、どんな課題に、どう向き合う団体か"},
+    {id:"q2", label:"10年後にどうなっていたいか（目指す姿）", hint:"会員・外国人・地域社会にとって、どんな存在になっているか"},
+    {id:"q3", label:"活動で大切にしたい価値観・行動指針", hint:"判断に迷ったときに立ち返る基準"},
+    {id:"q4", label:"現在の理念で残したいこと・変えたいこと", hint:""},
+    {id:"q5", label:"理念に入れたいキーワード", hint:"短い言葉で。いくつでも投稿できます", type:"keyword"},
+    {id:"q6", label:"その他、自由意見", hint:""}
+  ]
+};
+let view = safeLS("reikai.view") === "rinen" ? "rinen" : "timeline", rinenCfg = null, rinenPosts = [];
+function setView(v){
+  view = v; safeLS("reikai.view", v);
+  document.body.classList.toggle("view-rinen", v === "rinen");
+  document.querySelectorAll(".views .vbtn").forEach(b => b.classList.toggle("active", b.dataset.view === v));
+  if (v === "rinen") renderRinen();
+}
+document.querySelectorAll(".views .vbtn").forEach(b => b.onclick = () => setView(b.dataset.view));
+const rinenQs = () => (rinenCfg && Array.isArray(rinenCfg.questions) && rinenCfg.questions.length ? rinenCfg.questions : RINEN_DEFAULT.questions);
+const normKw = t => String(t||"").trim().replace(/\s+/g, "").toLowerCase();
+const likeCount = p => Object.values(p.likes||{}).filter(Boolean).length;
+function renderRinen(){
+  if (view !== "rinen") return;
+  const cfg = rinenCfg || RINEN_DEFAULT, qs = rinenQs(), directors = members.filter(m => m.role !== "事務局");
+  const posted = new Set(rinenPosts.map(p => p.authorId));
+  const t = todayStr(), dl = cfg.deadline ? diffDays(cfg.deadline, t) : null;
+  const dlText = cfg.deadline ? (dl > 0 ? `締切 ${fmt(cfg.deadline)}（あと${dl}日）` : dl === 0 ? `締切 本日 ${fmt(cfg.deadline)}` : `締切 ${fmt(cfg.deadline)} を過ぎています`) : "";
+  let html = `<div class="rinen-head"><span class="eyebrow">理事の意見集約 ・ 会議の参考資料</span><h2>${esc(cfg.title || RINEN_DEFAULT.title)}</h2><p class="intro">${esc(cfg.intro || "")}</p>
+    <div class="bar"><span>回答した理事 <b>${[...posted].filter(id => directors.some(m => m.id===id)).length} / ${directors.length}</b>名</span><span>意見 <b>${rinenPosts.length}</b>件</span>${dlText ? `<span class="deadline ${dl < 0 ? "late" : ""}">${esc(dlText)}</span>` : ""}<span class="btns"><button class="btn small" id="rinenCfgBtn">設定</button></span></div>
+    <div class="roster">${directors.map(m => `<span class="chip ${posted.has(m.id) ? "on" : ""}">${esc(m.name)}</span>`).join("")}</div></div>`;
+  qs.forEach((q, i) => {
+    const list = rinenPosts.filter(p => p.q === q.id).sort((a,b) => (a.createdAt||"").localeCompare(b.createdAt||""));
+    html += `<div class="q" data-q="${esc(q.id)}"><div class="q-h"><span class="qn">設問 ${i+1}</span><h3>${esc(q.label)}</h3><span class="cnt">${list.length}件</span></div>${q.hint ? `<p class="hint">${esc(q.hint)}</p>` : ""}`;
+    if (q.type === "keyword"){
+      const groups = {}; list.forEach(p => { const k = normKw(p.text); (groups[k] ||= {text: p.text.trim(), n:0, who:[]}); groups[k].n++; groups[k].who.push(p.author); });
+      const arr = Object.values(groups).sort((a,b) => b.n - a.n);
+      const max = arr.length ? arr[0].n : 0;
+      html += `<div class="q-form"><input data-kw="${esc(q.id)}" placeholder="例：共生、伴走、信頼" maxlength="40"><button class="btn primary" data-add="${esc(q.id)}">追加</button></div>`;
+      html += arr.length ? `<div class="kw">${arr.map(g => `<span class="k ${g.n > 1 && g.n === max ? "hot" : ""}" title="${esc(g.who.join("、"))}">${esc(g.text)}<span class="n">×${g.n}</span></span>`).join("")}</div>` : `<div class="empty">まだキーワードがありません</div>`;
+      const mine = list.filter(p => p.authorId === me);
+      if (mine.length) html += `<div class="mine">自分の投稿：${mine.map(p => `${esc(p.text)}<a href="#" data-rdel="${esc(p.id)}">削除</a>`).join("　")}</div>`;
+    } else {
+      html += `<div class="q-form"><textarea data-txt="${esc(q.id)}" placeholder="お考えをそのまま書いてください（箇条書きでも構いません）"></textarea><button class="btn primary" data-add="${esc(q.id)}">投稿</button></div>`;
+      html += list.length ? `<div class="q-list">${list.map(p => { const mine = me && p.likes && p.likes[me];
+        return `<div class="op"><div><div class="txt">${esc(p.text)}</div><div class="by">${esc(p.author)} ・ ${p.createdAt ? new Date(p.createdAt).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"}) : ""}${p.authorId===me ? ` ・ <a href="#" data-rdel="${esc(p.id)}">削除</a>` : ""}</div></div><button class="like ${mine ? "on" : ""}" data-rlike="${esc(p.id)}" title="共感">👍 ${likeCount(p)}</button></div>`; }).join("")}</div>` : `<div class="empty">まだ意見がありません。最初の一言をどうぞ。</div>`;
+    }
+    html += `</div>`;
+  });
+  html += `<div class="rinen-foot"><span>会議用の資料として、設問ごとに意見を賛同の多い順にまとめて出力できます。</span><span class="btns"><button class="btn" id="rinenCopy">テキストをコピー</button><button class="btn primary" id="rinenPrintBtn">印刷・PDF保存</button></span></div>`;
+  $("#rinenBody").innerHTML = html;
+  bindRinen();
+}
+function bindRinen(){
+  const col = () => db.collection("rinen/main/posts");
+  document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { if (!needMe()) return; const qid = b.dataset.add; const q = rinenQs().find(x => x.id === qid); const el = document.querySelector(q && q.type === "keyword" ? `[data-kw="${qid}"]` : `[data-txt="${qid}"]`); const text = (el.value || "").trim(); if (!text) return toast("内容を入力してください");
+    const doc = {q: qid, text, author: memberName(me), authorId: me, createdAt: now(), likes: {}};
+    guard(async () => { if (db) await col().add(doc); else { rinenPosts.push({...doc, id: "r" + Date.now()}); renderRinen(); } }, "投稿しました"); });
+  document.querySelectorAll("[data-rlike]").forEach(b => b.onclick = () => { if (!needMe()) return; const id = b.dataset.rlike, p = rinenPosts.find(x => x.id === id); if (!p) return; const on = !(p.likes && p.likes[me]);
+    guard(async () => { if (db) await db.doc(`rinen/main/posts/${id}`).update({likes: {[me]: on}}); else { (p.likes ||= {})[me] = on; renderRinen(); } }); });
+  document.querySelectorAll("[data-rdel]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.rdel, p = rinenPosts.find(x => x.id === id); if (!p || p.authorId !== me) return; if (!confirm("この投稿を削除しますか？")) return;
+    guard(async () => { if (db) await db.doc(`rinen/main/posts/${id}`).delete(); else { rinenPosts = rinenPosts.filter(x => x.id !== id); renderRinen(); } }, "削除しました"); });
+  const cb = $("#rinenCfgBtn"); if (cb) cb.onclick = () => { const cfg = rinenCfg || RINEN_DEFAULT; $("#rdTitle").value = cfg.title || ""; $("#rdIntro").value = cfg.intro || ""; $("#rdDeadline").value = cfg.deadline || "";
+    $("#rdQ").value = rinenQs().map(q => `${q.type === "keyword" ? "#" : ""}${q.label}${q.hint ? "｜" + q.hint : ""}`).join("\n"); $("#rinenDlg").showModal(); };
+  const cp = $("#rinenCopy"); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(rinenSummaryText()); toast("コピーしました"); } catch(e){ toast("コピーできませんでした"); } };
+  const pr = $("#rinenPrintBtn"); if (pr) pr.onclick = () => { $("#rinenPrint").innerHTML = rinenSummaryHtml(); document.body.classList.add("print-rinen"); const done = () => document.body.classList.remove("print-rinen"); window.addEventListener("afterprint", done, {once:true}); setTimeout(() => { window.print(); setTimeout(done, 1000); }, 50); };
+}
+function rinenSorted(q){ const list = rinenPosts.filter(p => p.q === q.id); return q.type === "keyword" ? list : list.sort((a,b) => likeCount(b) - likeCount(a) || (a.createdAt||"").localeCompare(b.createdAt||"")); }
+function rinenKeywords(q){ const groups = {}; rinenPosts.filter(p => p.q === q.id).forEach(p => { const k = normKw(p.text); (groups[k] ||= {text: p.text.trim(), n:0, who:[]}); groups[k].n++; groups[k].who.push(p.author); }); return Object.values(groups).sort((a,b) => b.n - a.n); }
+function rinenSummaryText(){
+  const cfg = rinenCfg || RINEN_DEFAULT, directors = members.filter(m => m.role !== "事務局"), posted = new Set(rinenPosts.map(p => p.authorId));
+  const out = [`${cfg.title || RINEN_DEFAULT.title} 意見まとめ（${fmt(todayStr())} 時点）`, `回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件`, ""];
+  rinenQs().forEach((q, i) => { out.push(`■ 設問${i+1}：${q.label}`);
+    if (q.type === "keyword"){ const ks = rinenKeywords(q); out.push(ks.length ? ks.map(g => `${g.text}（${g.n}）`).join("、") : "（なし）"); }
+    else { const l = rinenSorted(q); if (!l.length) out.push("（なし）"); l.forEach((p, j) => out.push(`${j+1}. ${p.text.replace(/\s*\n\s*/g, " ")}　― ${p.author}${likeCount(p) ? `（👍${likeCount(p)}）` : ""}`)); }
+    out.push(""); });
+  return out.join("\n");
+}
+function rinenSummaryHtml(){
+  const cfg = rinenCfg || RINEN_DEFAULT, directors = members.filter(m => m.role !== "事務局"), posted = new Set(rinenPosts.map(p => p.authorId));
+  let h = `<h1>${esc(cfg.title || RINEN_DEFAULT.title)} 意見まとめ</h1><div class="pm">${fmt(todayStr())} 時点 ・ 回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件 ・ 各設問は賛同の多い順</div>`;
+  rinenQs().forEach((q, i) => { h += `<h2>設問${i+1}　${esc(q.label)}</h2>`;
+    if (q.type === "keyword"){ const ks = rinenKeywords(q); h += ks.length ? `<div class="pk">${ks.map(g => `<span>${esc(g.text)}<small>（${g.n}）</small></span>`).join("")}</div>` : `<div>（なし）</div>`; }
+    else { const l = rinenSorted(q); h += l.length ? `<ol>${l.map(p => `<li>${esc(p.text)} <small>― ${esc(p.author)}${likeCount(p) ? `（👍${likeCount(p)}）` : ""}</small></li>`).join("")}</ol>` : `<div>（なし）</div>`; } });
+  return h;
+}
+$("#rinenDlg").addEventListener("close", () => { if ($("#rinenDlg").returnValue !== "ok") return;
+  const prev = rinenQs();
+  const questions = $("#rdQ").value.split("\n").map(l => l.trim()).filter(Boolean).map(l => { const kw = l.startsWith("#"); const body = kw ? l.slice(1).trim() : l; const [label, hint] = body.split(/[｜|]/).map(x => (x||"").trim()); const ex = prev.find(q => q.label === label); const q = {id: ex ? ex.id : "q" + Math.random().toString(36).slice(2,7), label, hint: hint || ""}; if (kw) q.type = "keyword"; return q; });
+  if (!questions.length) return toast("設問を1つ以上入力してください");
+  const cfg = {title: $("#rdTitle").value.trim() || RINEN_DEFAULT.title, intro: $("#rdIntro").value.trim(), deadline: $("#rdDeadline").value, questions, updatedAt: now(), updatedBy: me || ""};
+  guard(async () => { if (db) await db.doc("rinen/main").set(cfg); else { rinenCfg = cfg; renderRinen(); } }, "設定を保存しました"); });
 $("#whoDlg").addEventListener("close", () => { me = $("#whoSel").value || null; safeLS("reikai.me", me||""); renderMe(); renderStep(); });
 $("#meetingSel").onchange = e => selectMeeting(e.target.value);
 
@@ -694,7 +862,10 @@ function start(){
   db = makeDb(fs);
   me = safeLS("reikai.me") || null;
   renderMe(); renderRail(); renderStep();
-  db.doc("config/members").onSnapshot(snap => { if (snap.exists && Array.isArray(snap.data().list) && snap.data().list.length) members = snap.data().list; else db.doc("config/members").set({list: DEFAULT_MEMBERS, updatedAt: now()}); renderMe(); if (cur) renderStep(); if (!me) $("#whoDlg").showModal(); }, e => console.warn(e));
+  db.doc("config/members").onSnapshot(snap => { if (snap.exists && Array.isArray(snap.data().list) && snap.data().list.length) members = snap.data().list; else db.doc("config/members").set({list: DEFAULT_MEMBERS, updatedAt: now()}); renderMe(); if (cur) renderStep(); renderRinen(); if (!me) $("#whoDlg").showModal(); }, e => console.warn(e));
+  db.doc("rinen/main").onSnapshot(snap => { rinenCfg = snap.exists ? snap.data() : null; renderRinen(); }, e => console.warn(e));
+  db.collection("rinen/main/posts").orderBy("createdAt","asc").onSnapshot(snap => { rinenPosts = snapToArr(snap); renderRinen(); }, e => console.warn(e));
+  setView(view);
   db.collection("meetings").orderBy("date","asc").onSnapshot(snap => {
     meetings = snapToArr(snap);
     if (!curId || !meetings.find(m => m.id===curId)) selectMeeting(pickDefaultMeeting());
