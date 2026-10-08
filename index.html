@@ -193,6 +193,40 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
 
 /* comments */
 .comments{display:flex;flex-direction:column;gap:8px}
+/* T−45 決定テーマ・意見交換 */
+.theme-box{border:1px solid var(--accent);border-radius:8px;background:var(--accent-soft);padding:14px 18px;display:flex;flex-direction:column;gap:8px}
+.theme-box .tb-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.theme-box .tb-h h3{font-size:14.5px}
+.theme-box .tb-h .who{font-size:12px;color:var(--muted);margin-left:auto}
+.theme-box .theme{font-family:var(--display);font-size:20px;font-weight:700;line-height:1.4;color:var(--ink)}
+.theme-box .theme.none{color:var(--muted);font-weight:500;font-size:15px}
+.theme-box .tb-edit{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+.theme-box .tb-edit input{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;font-size:15px}
+.theme-ref{font-size:12.5px;color:var(--muted);border-top:1px solid rgba(0,0,0,.08);padding-top:8px}
+.theme-ref b{font-weight:500;color:var(--ink)}
+.theme-ref ol{margin:4px 0 0;padding-left:1.4em;display:flex;flex-direction:column;gap:2px}
+.theme-ref .n{font-family:var(--mono);font-size:11px}
+.disc{display:flex;flex-direction:column;gap:12px}
+.topic{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.topic .tp-h{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.topic .tp-h h4{margin:0;font-size:13.5px;font-family:var(--display)}
+.topic .tp-h .n{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-left:auto}
+.topic .tp-b{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.topic .q-form{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+.topic .q-form textarea{background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-height:52px;resize:vertical}
+.op{display:grid;grid-template-columns:1fr auto;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--ground);align-items:start}
+.op .txt{white-space:pre-wrap;line-height:1.6}
+.op .by{font-size:11.5px;color:var(--muted);margin-top:4px}
+.op .by a{margin-left:8px}
+.op .like{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;cursor:pointer;font-family:var(--mono);font-size:12px;white-space:nowrap}
+.op .like.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.replies{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;margin-left:16px;border-left:2px solid var(--line-strong);padding-left:12px}
+.reply .txt{white-space:pre-wrap;line-height:1.55;font-size:13.5px}
+.reply .by{font-size:11px;color:var(--muted)}
+.reply .by a{margin-left:8px}
+.reply-form{grid-column:1/-1;display:grid;grid-template-columns:1fr auto;gap:8px;margin-left:16px;padding-left:12px;border-left:2px solid var(--accent)}
+.reply-form textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px;width:100%;min-height:44px;resize:vertical;font-size:13.5px}
+@media (max-width:640px){.topic .q-form,.reply-form,.theme-box .tb-edit{grid-template-columns:1fr}}
 .cmt{display:grid;grid-template-columns:1fr;gap:2px;padding:8px 12px;border-left:3px solid var(--line-strong);background:var(--ground);border-radius:0 6px 6px 0}
 .cmt .h{font-size:11.5px;color:var(--muted)}
 .cmt .h b{color:var(--ink);font-weight:500}
@@ -420,9 +454,10 @@ const STEPS = [
   {key:"t60", off:-60, label:"T−60", name:"企画アイデア募集開始", owner:"理事長 → 全理事",
    desc:"テーマ・登壇候補・集客方法・リアル参加を促す仕掛け・懇親会企画のアイデアを全理事から募集します。毎回1案で構いません。",
    fields:[], ideas:true},
-  {key:"t45", off:-45, label:"T−45", name:"テーマ・企画を決定", owner:"全理事（まとまらなければ理事長が最終決定）",
-   desc:"集まったアイデアを集約し、テーマと企画の骨子を決めます。",
-   fields:[{k:"theme",t:"text",l:"決定テーマ",wide:true},{k:"outline",t:"textarea",l:"構成・主要論点",wide:true},{k:"speakerCand",t:"textarea",l:"登壇候補（外部ゲスト可）"},{k:"socialPlan",t:"textarea",l:"交流・懇親会企画（リアル参加の価値）"},{k:"decidedHow",t:"select",l:"決定方法",opts:["","理事間で合意","理事長が最終決定"]}]},
+  {key:"t45", off:-45, label:"T−45", name:"決定テーマの具体化（何をするかを決める）", owner:"全理事（まとまらなければ理事長が最終決定）",
+   desc:"T−60で集まったアイデアをもとに決定したテーマについて、「具体的に何をするか」を理事全員で決める工程です。議題ごとに意見を出し合い（意見への返信もできます）、まとまった内容を下の「決定事項の記録」に残します。決定テーマの記入は理事長・事務局が行います。",
+   fields:[{k:"theme",t:"text",l:"決定テーマ",wide:true,panel:true,noAi:true},{k:"outline",t:"textarea",l:"構成・主要論点",wide:true},{k:"speakerCand",t:"textarea",l:"登壇候補（外部ゲスト可）"},{k:"socialPlan",t:"textarea",l:"交流・懇親会企画（リアル参加の価値）"},{k:"decidedHow",t:"select",l:"決定方法",opts:["","理事間で合意","理事長が最終決定"]}],
+   discuss:true, recordTitle:"決定事項の記録", recordNote:"意見交換を踏まえて決まったこと"},
   {key:"t30", off:-30, label:"T−30", name:"登壇者確定・会場確定・告知開始", owner:"運営委員会 ／ 広報・会員拡大委員会",
    desc:"登壇者と会場を確定し、集客標準手順に沿って告知を始めます。外部参加は有料2,000円、会員は無料。",
    fields:[{k:"speakers",t:"textarea",l:"登壇者（確定）",wide:true},{k:"venueFixed",t:"text",l:"会場（確定）"},{k:"zoom",t:"select",l:"オンライン併用",opts:["","あり（Zoom）","なし"]},{k:"announceStart",t:"date",l:"告知開始日"},{k:"channels",t:"text",l:"告知媒体（メール・会員紹介・SNS等）"},{k:"targetExt",t:"number",l:"外部参加 目標人数",hint:"標準目標 5〜10名"},{k:"noticeText",t:"textarea",l:"告知文・リード文",wide:true}]},
@@ -444,6 +479,8 @@ const STEPS = [
 ];
 const CATS = ["テーマ","登壇候補","集客方法","リアル参加の仕掛け","懇親会・交流企画"];
 const AI_STEPS = ["t45","t30","t14"]; // AIの整理を表示する工程
+const T45_TOPICS = ["構成・主要論点","登壇者","交流・懇親会企画","集客・リアル参加の仕掛け","その他"]; // T−45 の議題
+const THEME_EDITORS = ["maeda","ishibashi"]; // 決定テーマを記入できる人（役割が理事長・事務局の人も可）
 const DEFAULT_MEMBERS = [
   {id:"maeda",name:"前田 智之",role:"理事長"},{id:"kawasaki",name:"川崎",role:"理事"},{id:"iwanaga",name:"岩永",role:"理事"},
   {id:"ando",name:"安藤",role:"理事"},{id:"miura",name:"三浦",role:"理事"},{id:"yamashita",name:"山下",role:"理事"},
@@ -452,7 +489,7 @@ const DEFAULT_MEMBERS = [
 
 /* ---------- 状態 ---------- */
 let db = null, members = DEFAULT_MEMBERS.slice(), meetings = [], cur = null, curId = null, curStep = "t60", me = null;
-let ideas = [], comments = [], outreach = [], attendance = [];
+let ideas = [], comments = [], outreach = [], attendance = [], t45posts = [];
 let unsubs = [];
 let aiBusy = false, aiTimer = null, aiLoaded = {ideas:false, comments:false}; const aiAutoTried = new Set();
 const $ = s => document.querySelector(s);
@@ -463,6 +500,8 @@ const diffDays = (a, b) => Math.round((new Date(a+"T00:00:00") - new Date(b+"T00
 const fmt = iso => { if(!iso) return "—"; const d = new Date(iso+"T00:00:00"); return `${d.getMonth()+1}/${d.getDate()}（${"日月火水木金土"[d.getDay()]}）`; };
 const now = () => new Date().toISOString();
 const memberName = id => id==="ai" ? "AI（自動入力）" : (members.find(m => m.id===id)||{}).name || id;
+const memberRole = id => (members.find(m => m.id===id)||{}).role || "";
+const canEditTheme = () => !!me && (THEME_EDITORS.includes(me) || ["理事長","事務局"].includes(memberRole(me)));
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1800); }
 function safeLS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v);}catch(e){ return null; } }
 
@@ -520,8 +559,10 @@ function renderStep(){
   html += `<p class="desc">${esc(s.desc)}</p>`;
   if (s.ideas) html += ideasHtml() + aiStatusHtml();
   if (s.kpi) html += kpiHtml(F);
+  if (s.discuss) html += themeBoxHtml(F) + discussHtml(s);
   if (AI_STEPS.includes(s.key)) html += aiHtml(s);
-  if (s.fields.length) html += `<div class="sect"><h3>記録 <span class="eyebrow">この工程の入力欄</span></h3><div class="grid" id="fields">${s.fields.map(f => fieldHtml(f, F[f.k], isAiFilled(f.k, F))).join("")}</div></div>`;
+  const gridFields = s.fields.filter(f => !f.panel);
+  if (gridFields.length) html += `<div class="sect"><h3>${esc(s.recordTitle || "記録")} <span class="eyebrow">${esc(s.recordNote || "この工程の入力欄")}</span></h3><div class="grid" id="fields">${gridFields.map(f => fieldHtml(f, F[f.k], isAiFilled(f.k, F))).join("")}</div></div>`;
   if (s.outreach) html += outreachHtml(F);
   if (s.attendance) html += attendanceHtml();
   html += commentsHtml(s.key);
@@ -529,6 +570,27 @@ function renderStep(){
   card.innerHTML = html;
   bindStep(s);
   maybeAutoAi(s);
+}
+function themeBoxHtml(F){
+  const theme = (F.theme || "").trim(), editor = canEditTheme();
+  const themeIdeas = ideas.filter(i => i.category === "テーマ").map(i => ({...i, n: Object.values(i.likes||{}).filter(Boolean).length})).sort((a,b) => b.n - a.n || (a.createdAt||"").localeCompare(b.createdAt||"")).slice(0, 5);
+  const ref = themeIdeas.length ? `<div class="theme-ref"><b>T−60で集まったテーマ案（賛同順）</b><ol>${themeIdeas.map(i => `<li>${esc(i.text)} <span class="n">― ${esc(i.author)}・👍${i.n}</span></li>`).join("")}</ol></div>` : `<div class="theme-ref">T−60のテーマ案はまだありません。</div>`;
+  const body = editor
+    ? `<div class="tb-edit"><input id="themeInput" value="${esc(theme)}" placeholder="例：2027年4月改正の政府提言・疑問点の確認（ディスカッション）"><button class="btn primary" id="themeSave">テーマを保存</button></div>`
+    : `<div class="theme ${theme ? "" : "none"}">${theme ? esc(theme) : "決定テーマはまだ記入されていません"}</div>`;
+  return `<div class="theme-box"><div class="tb-h"><h3>決定テーマ</h3><span class="eyebrow">T−60のアイデアから決定</span><span class="who">記入：理事長・事務局${editor ? "（あなたは編集できます）" : ""}</span></div>${editor && theme ? `<div class="theme">${esc(theme)}</div>` : ""}${body}${ref}</div>`;
+}
+function discussHtml(s){
+  const lk = p => Object.values(p.likes||{}).filter(Boolean).length;
+  const fmtD = iso => iso ? new Date(iso).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"}) : "";
+  const topics = T45_TOPICS.map(t => { const top = t45posts.filter(p => p.topic === t && !p.parentId);
+    const list = top.length ? top.map(p => { const reps = t45posts.filter(r => r.parentId === p.id); const mine = me && p.likes && p.likes[me];
+      return `<div class="op" data-pid="${esc(p.id)}"><div><div class="txt">${esc(p.text)}</div><div class="by">${esc(p.author)} ・ ${fmtD(p.createdAt)}<a href="#" data-reply="${esc(p.id)}">返信</a>${p.authorId===me ? `<a href="#" data-ddel="${esc(p.id)}">削除</a>` : ""}</div></div><button class="like ${mine ? "on" : ""}" data-dlike="${esc(p.id)}" title="賛同">👍 ${lk(p)}</button>
+        ${reps.length ? `<div class="replies">${reps.map(r => `<div class="reply"><div class="txt">${esc(r.text)}</div><div class="by">${esc(r.author)} ・ ${fmtD(r.createdAt)}${r.authorId===me ? `<a href="#" data-ddel="${esc(r.id)}">削除</a>` : ""}</div></div>`).join("")}</div>` : ""}
+        <div class="reply-form" id="rf-${esc(p.id)}" hidden><textarea data-rtxt="${esc(p.id)}" placeholder="この意見への返信・補足・質問"></textarea><button class="btn small" data-radd="${esc(p.id)}">返信する</button></div></div>`; }).join("") : `<div class="empty">まだ意見がありません</div>`;
+    return `<div class="topic"><div class="tp-h"><h4>${esc(t)}</h4><span class="n">${top.length}件</span></div><div class="tp-b"><div class="q-form"><textarea data-dtxt="${esc(t)}" placeholder="この議題についての意見・提案"></textarea><button class="btn primary" data-dadd="${esc(t)}">投稿</button></div>${list}</div></div>`; }).join("");
+  const who = new Set(t45posts.map(p => p.authorId)), directors = members.filter(m => m.role !== "事務局");
+  return `<div class="sect"><h3>具体策の意見交換 <span class="eyebrow">議題ごとに意見を投稿 ・ 発言 ${[...who].filter(id => directors.some(m => m.id===id)).length} / ${directors.length}名 ・ ${t45posts.length}件</span></h3><div class="disc">${topics}</div></div>`;
 }
 function ideasHtml(){
   const byCat = {}; ideas.forEach(i => (byCat[i.category] ||= []).push(i));
@@ -602,6 +664,23 @@ function bindStep(s){
     guard(async () => { if (db) await db.doc(`meetings/${curId}/outreach/${me}`).set(doc); else { outreach = outreach.filter(o => o.id!==me).concat([{...doc, id:me}]); renderStep(); } }, "声かけを登録しました"); };
   const at = $("#atSave"); if (at) at.onclick = () => { if(!needMe()) return; const doc = {name: memberName(me), status: $("#atStatus").value, social: $("#atSocial").checked, guest: $("#atGuest").value.trim(), updatedAt: now()};
     guard(async () => { if (db) await db.doc(`meetings/${curId}/attendance/${me}`).set(doc); else { attendance = attendance.filter(o => o.id!==me).concat([{...doc, id:me}]); renderStep(); } }, "出欠を登録しました"); };
+  const ts = $("#themeSave"); if (ts) ts.onclick = () => { if(!needMe()) return; if (!canEditTheme()) return toast("決定テーマは理事長・事務局が記入します"); const theme = $("#themeInput").value.trim();
+    guard(async () => { if (db) await db.doc(`meetings/${curId}`).update({fields:{theme}, updatedAt: now(), updatedBy: me}); else { (cur.fields ||= {}).theme = theme; cur.updatedAt = now(); cur.updatedBy = me; renderStep(); } }, "決定テーマを保存しました"); };
+  if (s.discuss){
+    const col = () => db.collection(`meetings/${curId}/t45posts`);
+    document.querySelectorAll("[data-dadd]").forEach(b => b.onclick = () => { if(!needMe()) return; const topic = b.dataset.dadd, el = document.querySelector(`[data-dtxt="${topic}"]`), text = (el.value||"").trim(); if(!text) return toast("内容を入力してください");
+      const doc = {topic, parentId: null, text, author: memberName(me), authorId: me, createdAt: now(), likes:{}};
+      guard(async () => { if (db) await col().add(doc); else { t45posts.push({...doc, id:"d"+Date.now()}); renderStep(); } }, "投稿しました"); });
+    document.querySelectorAll("[data-reply]").forEach(a => a.onclick = ev => { ev.preventDefault(); const f = $(`#rf-${a.dataset.reply}`); if (!f) return; f.hidden = !f.hidden; if (!f.hidden) f.querySelector("textarea").focus(); });
+    document.querySelectorAll("[data-radd]").forEach(b => b.onclick = () => { if(!needMe()) return; const pid = b.dataset.radd, parent = t45posts.find(p => p.id===pid); if (!parent) return; const el = document.querySelector(`[data-rtxt="${pid}"]`), text = (el.value||"").trim(); if(!text) return toast("内容を入力してください");
+      const doc = {topic: parent.topic, parentId: pid, text, author: memberName(me), authorId: me, createdAt: now(), likes:{}};
+      guard(async () => { if (db) await col().add(doc); else { t45posts.push({...doc, id:"d"+Date.now()}); renderStep(); } }, "返信しました"); });
+    document.querySelectorAll("[data-dlike]").forEach(b => b.onclick = () => { if(!needMe()) return; const id = b.dataset.dlike, p = t45posts.find(x => x.id===id); if (!p) return; const on = !(p.likes && p.likes[me]);
+      guard(async () => { if (db) await db.doc(`meetings/${curId}/t45posts/${id}`).update({likes:{[me]: on}}); else { (p.likes ||= {})[me] = on; renderStep(); } }); });
+    document.querySelectorAll("[data-ddel]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.ddel, p = t45posts.find(x => x.id===id); if (!p || p.authorId !== me) return;
+      if (t45posts.some(r => r.parentId === id)) return toast("返信が付いている意見は削除できません"); if (!confirm("この投稿を削除しますか？")) return;
+      guard(async () => { if (db) await db.doc(`meetings/${curId}/t45posts/${id}`).delete(); else { t45posts = t45posts.filter(x => x.id!==id); renderStep(); } }, "削除しました"); });
+  }
   $("#cmtAdd").onclick = () => { if(!needMe()) return; const text = $("#cmtText").value.trim(); if(!text) return; const doc = {step: s.key, author: memberName(me), authorId: me, text, createdAt: now()};
     guard(async () => { if (db) await db.collection(`meetings/${curId}/comments`).add(doc); else { comments.push({...doc, id:"c"+Date.now()}); renderStep(); } if (s.key==="t60") scheduleAi(); }, "送信しました"); };
   document.querySelectorAll("[data-cdel]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.cdel; const c = comments.find(x => x.id===id); if (!c || c.authorId!==me) return; if (!confirm("このコメントを削除しますか？")) return;
@@ -646,7 +725,7 @@ async function runAi(auto){
     // 入力欄へ自動反映：人が書いた文章は残し、その後ろにAIの文章を追記する。再生成時はAI部分だけ差し替える。
     // 選択肢・数値・日付は結合できないため、空欄か前回AIが入れたままのときだけ書き換える。
     const F0 = cur.fields || {}, prevFilled = (cur.ai && cur.ai.filled) || {}, fieldsPatch = {}, filled = {};
-    AI_STEPS.forEach(k => { const out = ai.steps[k] || {}; STEPS.find(x => x.key===k).fields.forEach(f => { if (f.t === "check") return;
+    AI_STEPS.forEach(k => { const out = ai.steps[k] || {}; STEPS.find(x => x.key===k).fields.forEach(f => { if (f.t === "check" || f.noAi) return;
       const curS = F0[f.k] == null ? "" : String(F0[f.k]); const v = normalizeAiValue(f, out[f.k]); const prevAi = prevFilled[f.k];
       let nv;
       if (f.t === "textarea" || f.t === "text"){ nv = joinAi(f, splitAi(f, curS, prevAi), String(v)); }
@@ -704,7 +783,7 @@ function aiHtml(s){
 function snapToArr(snap){ return snap.docs.filter(d => d.exists).map(d => ({id: d.id, ...d.data()})); }
 function selectMeeting(id){
   curId = id; safeLS("reikai.meeting", id || "");
-  unsubs.forEach(u => u()); unsubs = []; ideas = []; comments = []; outreach = []; attendance = []; aiLoaded = {ideas:false, comments:false}; clearTimeout(aiTimer);
+  unsubs.forEach(u => u()); unsubs = []; ideas = []; comments = []; outreach = []; attendance = []; t45posts = []; aiLoaded = {ideas:false, comments:false}; clearTimeout(aiTimer);
   cur = meetings.find(m => m.id===id) || null;
   if (!cur){ renderMeetingSel(); renderRail(); renderStep(); return; }
   if (db){
@@ -714,6 +793,7 @@ function selectMeeting(id){
     unsubs.push(db.collection(`meetings/${id}/comments`).onSnapshot(s => { comments = snapToArr(s); aiLoaded.comments = true; renderStep(); }, onErr));
     unsubs.push(db.collection(`meetings/${id}/outreach`).onSnapshot(s => { outreach = snapToArr(s); if (curStep==="t14") renderStep(); }, onErr));
     unsubs.push(db.collection(`meetings/${id}/attendance`).onSnapshot(s => { attendance = snapToArr(s); if (curStep==="day") renderStep(); }, onErr));
+    unsubs.push(db.collection(`meetings/${id}/t45posts`).orderBy("createdAt","asc").onSnapshot(s => { t45posts = snapToArr(s); if (curStep==="t45") renderStep(); }, onErr));
   }
   // 開いたときに「今」の工程を選ぶ
   const t = todayStr(); let pick = STEPS.find(s => stepState(cur, s) !== "done" && diffDays(addDays(cur.date, s.off), t) >= 0) || STEPS[STEPS.length-1];
