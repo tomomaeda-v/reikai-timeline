@@ -341,7 +341,8 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
     <div class="d-b">
       <div class="field"><label for="rdTitle">見出し</label><input id="rdTitle" placeholder="新しい理念づくり"></div>
       <div class="field"><label for="rdIntro">趣旨（理事への説明）</label><textarea id="rdIntro" style="min-height:90px"></textarea></div>
-      <div class="field"><label for="rdDeadline">次回理事会の日付（今回の意見の締切）</label><input id="rdDeadline" type="date"><span class="hint">理事会が終わったら次回の日付に更新します</span></div>
+      <div class="field"><label for="rdDlMode">次回理事会の日付（今回の意見の締切）</label><select id="rdDlMode"><option value="auto">例会タイムラインの次の例会と連動（自動）</option><option value="manual">日付を指定する</option></select></div>
+      <div class="field"><label for="rdDeadline">指定する日付</label><input id="rdDeadline" type="date"><span class="hint">「日付を指定する」のときだけ使われます。連動の場合は例会の日程変更に自動で追従します</span></div>
       <div class="field"><label for="rdGoal">最終目標</label><input id="rdGoal" placeholder="2027年3月末までに新しい理念を完成"></div>
       <div class="field"><label for="rdMinutes">これまでの理事会での議論・決まったこと</label><textarea id="rdMinutes" style="min-height:80px" placeholder="例：10月理事会：使命の方向性は「協働」で概ね一致。11月は目指す姿を中心に議論。"></textarea><span class="hint">理事会のあとに追記していくと、次の意見の出発点になります</span></div>
       <div class="field"><label for="rdQ">設問（1行に1問。「設問｜補足説明」の形。行頭に「#」を付けると短いキーワードを集める設問になります）</label><textarea id="rdQ" class="members-edit"></textarea><span class="hint">行を消すと設問が非表示になります。投稿は残ります。</span></div>
@@ -732,7 +733,7 @@ $("#newMeetingBtn").onclick = () => { editingId = null; $("#mdTitle").textConten
 $("#editMeetingBtn").onclick = () => { if(!cur) return toast("先に例会を追加してください"); editingId = cur.id; $("#mdTitle").textContent = "日程・会場を変更"; $("#mdName").value = cur.title; $("#mdDate").value = cur.date; $("#mdVenue").value = cur.venue||""; $("#meetingDlg").showModal(); };
 $("#meetingDlg").addEventListener("close", () => { if ($("#meetingDlg").returnValue !== "ok") return; const title = $("#mdName").value.trim(), date = $("#mdDate").value, venue = $("#mdVenue").value.trim(); if(!title || !date) return;
   guard(async () => {
-    if (editingId){ if (db) await db.doc(`meetings/${editingId}`).update({title, date, venue, updatedAt: now(), updatedBy: me||""}); else { Object.assign(cur, {title, date, venue}); renderMeetingSel(); renderRail(); renderStep(); } }
+    if (editingId){ if (db) await db.doc(`meetings/${editingId}`).update({title, date, venue, updatedAt: now(), updatedBy: me||""}); else { Object.assign(cur, {title, date, venue}); renderMeetingSel(); renderRail(); renderStep(); renderRinen(); } }
     else { const id = date.replace(/-/g,"").slice(0,6) + "-" + Math.random().toString(36).slice(2,6); const doc = {title, date, venue, createdAt: now(), createdBy: me||"", steps:{}, fields:{}};
       if (db) await db.doc(`meetings/${id}`).set(doc); else { meetings.push({id, ...doc}); meetings.sort((a,b)=>a.date.localeCompare(b.date)); }
       selectMeeting(id); }
@@ -749,6 +750,7 @@ const RINEN_DEFAULT = {
   title: "新しい理念づくり",
   intro: "コンソーシアムの新しい理念（使命・目指す姿・大切にする価値観）を策定するにあたり、理事の皆さまのお考えを集めます。\nここで決めるのではなく、集まった意見を毎月の理事会で議論し、次につなげていきます。1つの設問だけでも、短い一言でも構いません。共感する意見には 👍 を押してください。",
   goal: "2027年3月末までに新しい理念を完成",
+  deadlineMode: "auto",
   deadline: "",
   minutes: "",
   questions: [
@@ -770,13 +772,20 @@ function setView(v){
 document.querySelectorAll(".views .vbtn").forEach(b => b.onclick = () => setView(b.dataset.view));
 const rinenQs = () => (rinenCfg && Array.isArray(rinenCfg.questions) && rinenCfg.questions.length ? rinenCfg.questions : RINEN_DEFAULT.questions);
 const normKw = t => String(t||"").trim().replace(/\s+/g, "").toLowerCase();
+function rinenDeadline(cfg){
+  if (cfg.deadlineMode === "manual") return cfg.deadline ? {date: cfg.deadline, src: "manual"} : null;
+  const t = todayStr(), up = meetings.filter(m => m.date && diffDays(m.date, t) >= 0).sort((a,b) => a.date.localeCompare(b.date));
+  return up[0] ? {date: up[0].date, src: "auto", title: up[0].title} : null;
+}
 const likeCount = p => Object.values(p.likes||{}).filter(Boolean).length;
 function renderRinen(){
   if (view !== "rinen") return;
   const cfg = rinenCfg || RINEN_DEFAULT, qs = rinenQs(), directors = members.filter(m => m.role !== "事務局");
   const posted = new Set(rinenPosts.map(p => p.authorId));
-  const t = todayStr(), dl = cfg.deadline ? diffDays(cfg.deadline, t) : null;
-  const dlText = cfg.deadline ? (dl > 0 ? `次回理事会 ${fmt(cfg.deadline)} まで（あと${dl}日）` : dl === 0 ? `本日 ${fmt(cfg.deadline)} 理事会` : `理事会 ${fmt(cfg.deadline)} は終了。次回の日付を「設定」で更新してください`) : "次回理事会の日付は「設定」で入力";
+  const t = todayStr(), dd = rinenDeadline(cfg), dl = dd ? diffDays(dd.date, t) : null;
+  const src = dd ? (dd.src === "auto" ? `例会「${dd.title}」と連動` : "指定日") : "";
+  const dlText = dd ? (dl > 0 ? `次回理事会 ${fmt(dd.date)} まで（あと${dl}日・${src}）` : dl === 0 ? `本日 ${fmt(dd.date)} 理事会（${src}）` : `理事会 ${fmt(dd.date)} は終了。次回の日付を「設定」で更新してください`)
+    : (cfg.deadlineMode === "manual" ? "次回理事会の日付は「設定」で指定" : "次の例会が未登録です。例会タイムラインで「＋ 例会を追加」するか、「設定」で日付を指定してください");
   const goal = cfg.goal != null ? cfg.goal : RINEN_DEFAULT.goal;
   let html = `<div class="rinen-head"><span class="eyebrow">理事の意見集約 ・ 会議の参考資料</span><h2>${esc(cfg.title || RINEN_DEFAULT.title)}</h2><p class="intro">${esc(cfg.intro || "")}</p>
     <div class="bar"><span>回答した理事 <b>${[...posted].filter(id => directors.some(m => m.id===id)).length} / ${directors.length}</b>名</span><span>意見 <b>${rinenPosts.length}</b>件</span><span class="deadline ${dl !== null && dl < 0 ? "late" : ""}">${esc(dlText)}</span>${goal ? `<span>最終目標：<b style="font-family:var(--body)">${esc(goal)}</b></span>` : ""}<span class="btns"><button class="btn small" id="rinenCfgBtn">設定</button></span></div>
@@ -813,7 +822,7 @@ function bindRinen(){
     guard(async () => { if (db) await db.doc(`rinen/main/posts/${id}`).update({likes: {[me]: on}}); else { (p.likes ||= {})[me] = on; renderRinen(); } }); });
   document.querySelectorAll("[data-rdel]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.rdel, p = rinenPosts.find(x => x.id === id); if (!p || p.authorId !== me) return; if (!confirm("この投稿を削除しますか？")) return;
     guard(async () => { if (db) await db.doc(`rinen/main/posts/${id}`).delete(); else { rinenPosts = rinenPosts.filter(x => x.id !== id); renderRinen(); } }, "削除しました"); });
-  const cb = $("#rinenCfgBtn"); if (cb) cb.onclick = () => { const cfg = rinenCfg || RINEN_DEFAULT; $("#rdTitle").value = cfg.title || ""; $("#rdIntro").value = cfg.intro || ""; $("#rdDeadline").value = cfg.deadline || ""; $("#rdGoal").value = cfg.goal != null ? cfg.goal : RINEN_DEFAULT.goal; $("#rdMinutes").value = cfg.minutes || "";
+  const cb = $("#rinenCfgBtn"); if (cb) cb.onclick = () => { const cfg = rinenCfg || RINEN_DEFAULT; $("#rdTitle").value = cfg.title || ""; $("#rdIntro").value = cfg.intro || ""; $("#rdDeadline").value = cfg.deadline || ""; $("#rdDlMode").value = cfg.deadlineMode === "manual" ? "manual" : "auto"; $("#rdDeadline").disabled = $("#rdDlMode").value !== "manual"; $("#rdGoal").value = cfg.goal != null ? cfg.goal : RINEN_DEFAULT.goal; $("#rdMinutes").value = cfg.minutes || "";
     $("#rdQ").value = rinenQs().map(q => `${q.type === "keyword" ? "#" : ""}${q.label}${q.hint ? "｜" + q.hint : ""}`).join("\n"); $("#rinenDlg").showModal(); };
   const cp = $("#rinenCopy"); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(rinenSummaryText()); toast("コピーしました"); } catch(e){ toast("コピーできませんでした"); } };
   const pr = $("#rinenPrintBtn"); if (pr) pr.onclick = () => { $("#rinenPrint").innerHTML = rinenSummaryHtml(); document.body.classList.add("print-rinen"); const done = () => document.body.classList.remove("print-rinen"); window.addEventListener("afterprint", done, {once:true}); setTimeout(() => { window.print(); setTimeout(done, 1000); }, 50); };
@@ -822,7 +831,7 @@ function rinenSorted(q){ const list = rinenPosts.filter(p => p.q === q.id); retu
 function rinenKeywords(q){ const groups = {}; rinenPosts.filter(p => p.q === q.id).forEach(p => { const k = normKw(p.text); (groups[k] ||= {text: p.text.trim(), n:0, who:[]}); groups[k].n++; groups[k].who.push(p.author); }); return Object.values(groups).sort((a,b) => b.n - a.n); }
 function rinenSummaryText(){
   const cfg = rinenCfg || RINEN_DEFAULT, directors = members.filter(m => m.role !== "事務局"), posted = new Set(rinenPosts.map(p => p.authorId));
-  const out = [`${cfg.title || RINEN_DEFAULT.title} 意見まとめ（${fmt(todayStr())} 時点）`, `回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件${cfg.deadline ? ` ・ 理事会 ${fmt(cfg.deadline)}` : ""}${cfg.goal ? ` ・ 最終目標：${cfg.goal}` : ""}`, ""];
+  const out = [`${cfg.title || RINEN_DEFAULT.title} 意見まとめ（${fmt(todayStr())} 時点）`, `回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件${rinenDeadline(cfg) ? ` ・ 理事会 ${fmt(rinenDeadline(cfg).date)}` : ""}${cfg.goal ? ` ・ 最終目標：${cfg.goal}` : ""}`, ""];
   if (cfg.minutes) out.push("■ これまでの理事会での議論・決まったこと", cfg.minutes, "");
   rinenQs().forEach((q, i) => { out.push(`■ 設問${i+1}：${q.label}`);
     if (q.type === "keyword"){ const ks = rinenKeywords(q); out.push(ks.length ? ks.map(g => `${g.text}（${g.n}）`).join("、") : "（なし）"); }
@@ -832,18 +841,19 @@ function rinenSummaryText(){
 }
 function rinenSummaryHtml(){
   const cfg = rinenCfg || RINEN_DEFAULT, directors = members.filter(m => m.role !== "事務局"), posted = new Set(rinenPosts.map(p => p.authorId));
-  let h = `<h1>${esc(cfg.title || RINEN_DEFAULT.title)} 意見まとめ</h1><div class="pm">${fmt(todayStr())} 時点 ・ 回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件${cfg.deadline ? ` ・ 理事会 ${fmt(cfg.deadline)}` : ""}${cfg.goal ? ` ・ 最終目標：${esc(cfg.goal)}` : ""} ・ 各設問は賛同の多い順</div>`;
+  let h = `<h1>${esc(cfg.title || RINEN_DEFAULT.title)} 意見まとめ</h1><div class="pm">${fmt(todayStr())} 時点 ・ 回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件${rinenDeadline(cfg) ? ` ・ 理事会 ${fmt(rinenDeadline(cfg).date)}` : ""}${cfg.goal ? ` ・ 最終目標：${esc(cfg.goal)}` : ""} ・ 各設問は賛同の多い順</div>`;
   if (cfg.minutes) h += `<h2>これまでの理事会での議論・決まったこと</h2><div style="white-space:pre-wrap">${esc(cfg.minutes)}</div>`;
   rinenQs().forEach((q, i) => { h += `<h2>設問${i+1}　${esc(q.label)}</h2>`;
     if (q.type === "keyword"){ const ks = rinenKeywords(q); h += ks.length ? `<div class="pk">${ks.map(g => `<span>${esc(g.text)}<small>（${g.n}）</small></span>`).join("")}</div>` : `<div>（なし）</div>`; }
     else { const l = rinenSorted(q); h += l.length ? `<ol>${l.map(p => `<li>${esc(p.text)} <small>― ${esc(p.author)}${likeCount(p) ? `（👍${likeCount(p)}）` : ""}</small></li>`).join("")}</ol>` : `<div>（なし）</div>`; } });
   return h;
 }
+$("#rdDlMode").onchange = () => { $("#rdDeadline").disabled = $("#rdDlMode").value !== "manual"; };
 $("#rinenDlg").addEventListener("close", () => { if ($("#rinenDlg").returnValue !== "ok") return;
   const prev = rinenQs();
   const questions = $("#rdQ").value.split("\n").map(l => l.trim()).filter(Boolean).map(l => { const kw = l.startsWith("#"); const body = kw ? l.slice(1).trim() : l; const [label, hint] = body.split(/[｜|]/).map(x => (x||"").trim()); const ex = prev.find(q => q.label === label); const q = {id: ex ? ex.id : "q" + Math.random().toString(36).slice(2,7), label, hint: hint || ""}; if (kw) q.type = "keyword"; return q; });
   if (!questions.length) return toast("設問を1つ以上入力してください");
-  const cfg = {title: $("#rdTitle").value.trim() || RINEN_DEFAULT.title, intro: $("#rdIntro").value.trim(), deadline: $("#rdDeadline").value, goal: $("#rdGoal").value.trim(), minutes: $("#rdMinutes").value.trim(), questions, updatedAt: now(), updatedBy: me || ""};
+  const cfg = {title: $("#rdTitle").value.trim() || RINEN_DEFAULT.title, intro: $("#rdIntro").value.trim(), deadlineMode: $("#rdDlMode").value === "manual" ? "manual" : "auto", deadline: $("#rdDeadline").value, goal: $("#rdGoal").value.trim(), minutes: $("#rdMinutes").value.trim(), questions, updatedAt: now(), updatedBy: me || ""};
   guard(async () => { if (db) await db.doc("rinen/main").set(cfg); else { rinenCfg = cfg; renderRinen(); } }, "設定を保存しました"); });
 $("#whoDlg").addEventListener("close", () => { me = $("#whoSel").value || null; safeLS("reikai.me", me||""); renderMe(); renderStep(); });
 $("#meetingSel").onchange = e => selectMeeting(e.target.value);
@@ -881,6 +891,7 @@ function start(){
     meetings = snapToArr(snap);
     if (!curId || !meetings.find(m => m.id===curId)) selectMeeting(pickDefaultMeeting());
     else { cur = meetings.find(m => m.id===curId); renderMeetingSel(); renderRail(); }
+    renderRinen();
   }, e => { console.warn(e); showBanner("データに接続できませんでした。Firebaseの設定とセキュリティルールを確認してください。", "late"); });
 }
 </script>
