@@ -239,6 +239,9 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
 .rinen-head .bar .btns{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
 .rinen-head .deadline{font-family:var(--mono)}
 .rinen-head .deadline.late{color:var(--late)}
+.rinen-head .minutes{border-top:1px solid var(--line);padding-top:10px;font-size:13.5px}
+.rinen-head .minutes b{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.rinen-head .minutes div{white-space:pre-wrap}
 .q{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 24px;display:flex;flex-direction:column;gap:12px}
 .q .q-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .q .q-h .qn{font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--accent-soft);padding:1px 8px;border-radius:999px}
@@ -338,7 +341,9 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
     <div class="d-b">
       <div class="field"><label for="rdTitle">見出し</label><input id="rdTitle" placeholder="新しい理念づくり"></div>
       <div class="field"><label for="rdIntro">趣旨（理事への説明）</label><textarea id="rdIntro" style="min-height:90px"></textarea></div>
-      <div class="field"><label for="rdDeadline">意見の締切</label><input id="rdDeadline" type="date"><span class="hint">空欄なら締切を表示しません</span></div>
+      <div class="field"><label for="rdDeadline">次回理事会の日付（今回の意見の締切）</label><input id="rdDeadline" type="date"><span class="hint">理事会が終わったら次回の日付に更新します</span></div>
+      <div class="field"><label for="rdGoal">最終目標</label><input id="rdGoal" placeholder="2027年3月末までに新しい理念を完成"></div>
+      <div class="field"><label for="rdMinutes">これまでの理事会での議論・決まったこと</label><textarea id="rdMinutes" style="min-height:80px" placeholder="例：10月理事会：使命の方向性は「協働」で概ね一致。11月は目指す姿を中心に議論。"></textarea><span class="hint">理事会のあとに追記していくと、次の意見の出発点になります</span></div>
       <div class="field"><label for="rdQ">設問（1行に1問。「設問｜補足説明」の形。行頭に「#」を付けると短いキーワードを集める設問になります）</label><textarea id="rdQ" class="members-edit"></textarea><span class="hint">行を消すと設問が非表示になります。投稿は残ります。</span></div>
     </div>
     <div class="d-f"><button class="btn" value="cancel">キャンセル</button><button class="btn primary" value="ok">保存</button></div>
@@ -442,7 +447,7 @@ const DEFAULT_MEMBERS = [
   {id:"maeda",name:"前田 智之",role:"理事長"},{id:"kawasaki",name:"川崎",role:"理事"},{id:"iwanaga",name:"岩永",role:"理事"},
   {id:"ando",name:"安藤",role:"理事"},{id:"miura",name:"三浦",role:"理事"},{id:"yamashita",name:"山下",role:"理事"},
   {id:"ichiyanagi",name:"一柳",role:"理事"},{id:"suzuki",name:"鈴木",role:"理事"},{id:"hirayama",name:"平山",role:"理事"},
-  {id:"kitamura",name:"北村",role:"理事"},{id:"ishibashi",name:"石橋",role:"事務局"}];
+  {id:"kitamura",name:"北村",role:"理事"},{id:"moriyama",name:"森山",role:"理事"},{id:"maji",name:"間地",role:"理事"},{id:"ishibashi",name:"石橋",role:"事務局"}];
 
 /* ---------- 状態 ---------- */
 let db = null, members = DEFAULT_MEMBERS.slice(), meetings = [], cur = null, curId = null, curStep = "t60", me = null;
@@ -742,8 +747,10 @@ $("#meSel").onchange = e => { me = e.target.value || null; safeLS("reikai.me", m
 /* ---------- 理念づくり（意見集約） ---------- */
 const RINEN_DEFAULT = {
   title: "新しい理念づくり",
-  intro: "コンソーシアムの新しい理念（使命・目指す姿・大切にする価値観）を策定するにあたり、理事の皆さまのお考えを集めます。\nここで決めるのではなく、理念を決める会議の参考資料として使います。1つの設問だけでも、短い一言でも構いません。共感する意見には 👍 を押してください。",
+  intro: "コンソーシアムの新しい理念（使命・目指す姿・大切にする価値観）を策定するにあたり、理事の皆さまのお考えを集めます。\nここで決めるのではなく、集まった意見を毎月の理事会で議論し、次につなげていきます。1つの設問だけでも、短い一言でも構いません。共感する意見には 👍 を押してください。",
+  goal: "2027年3月末までに新しい理念を完成",
   deadline: "",
+  minutes: "",
   questions: [
     {id:"q1", label:"私たちは何のために存在するのか（使命）", hint:"誰の、どんな課題に、どう向き合う団体か"},
     {id:"q2", label:"10年後にどうなっていたいか（目指す姿）", hint:"会員・外国人・地域社会にとって、どんな存在になっているか"},
@@ -769,10 +776,12 @@ function renderRinen(){
   const cfg = rinenCfg || RINEN_DEFAULT, qs = rinenQs(), directors = members.filter(m => m.role !== "事務局");
   const posted = new Set(rinenPosts.map(p => p.authorId));
   const t = todayStr(), dl = cfg.deadline ? diffDays(cfg.deadline, t) : null;
-  const dlText = cfg.deadline ? (dl > 0 ? `締切 ${fmt(cfg.deadline)}（あと${dl}日）` : dl === 0 ? `締切 本日 ${fmt(cfg.deadline)}` : `締切 ${fmt(cfg.deadline)} を過ぎています`) : "";
+  const dlText = cfg.deadline ? (dl > 0 ? `次回理事会 ${fmt(cfg.deadline)} まで（あと${dl}日）` : dl === 0 ? `本日 ${fmt(cfg.deadline)} 理事会` : `理事会 ${fmt(cfg.deadline)} は終了。次回の日付を「設定」で更新してください`) : "次回理事会の日付は「設定」で入力";
+  const goal = cfg.goal != null ? cfg.goal : RINEN_DEFAULT.goal;
   let html = `<div class="rinen-head"><span class="eyebrow">理事の意見集約 ・ 会議の参考資料</span><h2>${esc(cfg.title || RINEN_DEFAULT.title)}</h2><p class="intro">${esc(cfg.intro || "")}</p>
-    <div class="bar"><span>回答した理事 <b>${[...posted].filter(id => directors.some(m => m.id===id)).length} / ${directors.length}</b>名</span><span>意見 <b>${rinenPosts.length}</b>件</span>${dlText ? `<span class="deadline ${dl < 0 ? "late" : ""}">${esc(dlText)}</span>` : ""}<span class="btns"><button class="btn small" id="rinenCfgBtn">設定</button></span></div>
-    <div class="roster">${directors.map(m => `<span class="chip ${posted.has(m.id) ? "on" : ""}">${esc(m.name)}</span>`).join("")}</div></div>`;
+    <div class="bar"><span>回答した理事 <b>${[...posted].filter(id => directors.some(m => m.id===id)).length} / ${directors.length}</b>名</span><span>意見 <b>${rinenPosts.length}</b>件</span><span class="deadline ${dl !== null && dl < 0 ? "late" : ""}">${esc(dlText)}</span>${goal ? `<span>最終目標：<b style="font-family:var(--body)">${esc(goal)}</b></span>` : ""}<span class="btns"><button class="btn small" id="rinenCfgBtn">設定</button></span></div>
+    <div class="roster">${directors.map(m => `<span class="chip ${posted.has(m.id) ? "on" : ""}">${esc(m.name)}</span>`).join("")}</div>
+    ${cfg.minutes ? `<div class="minutes"><b>これまでの理事会での議論・決まったこと</b><div>${esc(cfg.minutes)}</div></div>` : ""}</div>`;
   qs.forEach((q, i) => {
     const list = rinenPosts.filter(p => p.q === q.id).sort((a,b) => (a.createdAt||"").localeCompare(b.createdAt||""));
     html += `<div class="q" data-q="${esc(q.id)}"><div class="q-h"><span class="qn">設問 ${i+1}</span><h3>${esc(q.label)}</h3><span class="cnt">${list.length}件</span></div>${q.hint ? `<p class="hint">${esc(q.hint)}</p>` : ""}`;
@@ -804,7 +813,7 @@ function bindRinen(){
     guard(async () => { if (db) await db.doc(`rinen/main/posts/${id}`).update({likes: {[me]: on}}); else { (p.likes ||= {})[me] = on; renderRinen(); } }); });
   document.querySelectorAll("[data-rdel]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.rdel, p = rinenPosts.find(x => x.id === id); if (!p || p.authorId !== me) return; if (!confirm("この投稿を削除しますか？")) return;
     guard(async () => { if (db) await db.doc(`rinen/main/posts/${id}`).delete(); else { rinenPosts = rinenPosts.filter(x => x.id !== id); renderRinen(); } }, "削除しました"); });
-  const cb = $("#rinenCfgBtn"); if (cb) cb.onclick = () => { const cfg = rinenCfg || RINEN_DEFAULT; $("#rdTitle").value = cfg.title || ""; $("#rdIntro").value = cfg.intro || ""; $("#rdDeadline").value = cfg.deadline || "";
+  const cb = $("#rinenCfgBtn"); if (cb) cb.onclick = () => { const cfg = rinenCfg || RINEN_DEFAULT; $("#rdTitle").value = cfg.title || ""; $("#rdIntro").value = cfg.intro || ""; $("#rdDeadline").value = cfg.deadline || ""; $("#rdGoal").value = cfg.goal != null ? cfg.goal : RINEN_DEFAULT.goal; $("#rdMinutes").value = cfg.minutes || "";
     $("#rdQ").value = rinenQs().map(q => `${q.type === "keyword" ? "#" : ""}${q.label}${q.hint ? "｜" + q.hint : ""}`).join("\n"); $("#rinenDlg").showModal(); };
   const cp = $("#rinenCopy"); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(rinenSummaryText()); toast("コピーしました"); } catch(e){ toast("コピーできませんでした"); } };
   const pr = $("#rinenPrintBtn"); if (pr) pr.onclick = () => { $("#rinenPrint").innerHTML = rinenSummaryHtml(); document.body.classList.add("print-rinen"); const done = () => document.body.classList.remove("print-rinen"); window.addEventListener("afterprint", done, {once:true}); setTimeout(() => { window.print(); setTimeout(done, 1000); }, 50); };
@@ -813,7 +822,8 @@ function rinenSorted(q){ const list = rinenPosts.filter(p => p.q === q.id); retu
 function rinenKeywords(q){ const groups = {}; rinenPosts.filter(p => p.q === q.id).forEach(p => { const k = normKw(p.text); (groups[k] ||= {text: p.text.trim(), n:0, who:[]}); groups[k].n++; groups[k].who.push(p.author); }); return Object.values(groups).sort((a,b) => b.n - a.n); }
 function rinenSummaryText(){
   const cfg = rinenCfg || RINEN_DEFAULT, directors = members.filter(m => m.role !== "事務局"), posted = new Set(rinenPosts.map(p => p.authorId));
-  const out = [`${cfg.title || RINEN_DEFAULT.title} 意見まとめ（${fmt(todayStr())} 時点）`, `回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件`, ""];
+  const out = [`${cfg.title || RINEN_DEFAULT.title} 意見まとめ（${fmt(todayStr())} 時点）`, `回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件${cfg.deadline ? ` ・ 理事会 ${fmt(cfg.deadline)}` : ""}${cfg.goal ? ` ・ 最終目標：${cfg.goal}` : ""}`, ""];
+  if (cfg.minutes) out.push("■ これまでの理事会での議論・決まったこと", cfg.minutes, "");
   rinenQs().forEach((q, i) => { out.push(`■ 設問${i+1}：${q.label}`);
     if (q.type === "keyword"){ const ks = rinenKeywords(q); out.push(ks.length ? ks.map(g => `${g.text}（${g.n}）`).join("、") : "（なし）"); }
     else { const l = rinenSorted(q); if (!l.length) out.push("（なし）"); l.forEach((p, j) => out.push(`${j+1}. ${p.text.replace(/\s*\n\s*/g, " ")}　― ${p.author}${likeCount(p) ? `（👍${likeCount(p)}）` : ""}`)); }
@@ -822,7 +832,8 @@ function rinenSummaryText(){
 }
 function rinenSummaryHtml(){
   const cfg = rinenCfg || RINEN_DEFAULT, directors = members.filter(m => m.role !== "事務局"), posted = new Set(rinenPosts.map(p => p.authorId));
-  let h = `<h1>${esc(cfg.title || RINEN_DEFAULT.title)} 意見まとめ</h1><div class="pm">${fmt(todayStr())} 時点 ・ 回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件 ・ 各設問は賛同の多い順</div>`;
+  let h = `<h1>${esc(cfg.title || RINEN_DEFAULT.title)} 意見まとめ</h1><div class="pm">${fmt(todayStr())} 時点 ・ 回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件${cfg.deadline ? ` ・ 理事会 ${fmt(cfg.deadline)}` : ""}${cfg.goal ? ` ・ 最終目標：${esc(cfg.goal)}` : ""} ・ 各設問は賛同の多い順</div>`;
+  if (cfg.minutes) h += `<h2>これまでの理事会での議論・決まったこと</h2><div style="white-space:pre-wrap">${esc(cfg.minutes)}</div>`;
   rinenQs().forEach((q, i) => { h += `<h2>設問${i+1}　${esc(q.label)}</h2>`;
     if (q.type === "keyword"){ const ks = rinenKeywords(q); h += ks.length ? `<div class="pk">${ks.map(g => `<span>${esc(g.text)}<small>（${g.n}）</small></span>`).join("")}</div>` : `<div>（なし）</div>`; }
     else { const l = rinenSorted(q); h += l.length ? `<ol>${l.map(p => `<li>${esc(p.text)} <small>― ${esc(p.author)}${likeCount(p) ? `（👍${likeCount(p)}）` : ""}</small></li>`).join("")}</ol>` : `<div>（なし）</div>`; } });
@@ -832,7 +843,7 @@ $("#rinenDlg").addEventListener("close", () => { if ($("#rinenDlg").returnValue 
   const prev = rinenQs();
   const questions = $("#rdQ").value.split("\n").map(l => l.trim()).filter(Boolean).map(l => { const kw = l.startsWith("#"); const body = kw ? l.slice(1).trim() : l; const [label, hint] = body.split(/[｜|]/).map(x => (x||"").trim()); const ex = prev.find(q => q.label === label); const q = {id: ex ? ex.id : "q" + Math.random().toString(36).slice(2,7), label, hint: hint || ""}; if (kw) q.type = "keyword"; return q; });
   if (!questions.length) return toast("設問を1つ以上入力してください");
-  const cfg = {title: $("#rdTitle").value.trim() || RINEN_DEFAULT.title, intro: $("#rdIntro").value.trim(), deadline: $("#rdDeadline").value, questions, updatedAt: now(), updatedBy: me || ""};
+  const cfg = {title: $("#rdTitle").value.trim() || RINEN_DEFAULT.title, intro: $("#rdIntro").value.trim(), deadline: $("#rdDeadline").value, goal: $("#rdGoal").value.trim(), minutes: $("#rdMinutes").value.trim(), questions, updatedAt: now(), updatedBy: me || ""};
   guard(async () => { if (db) await db.doc("rinen/main").set(cfg); else { rinenCfg = cfg; renderRinen(); } }, "設定を保存しました"); });
 $("#whoDlg").addEventListener("close", () => { me = $("#whoSel").value || null; safeLS("reikai.me", me||""); renderMe(); renderStep(); });
 $("#meetingSel").onchange = e => selectMeeting(e.target.value);
