@@ -171,6 +171,23 @@ a{color:var(--accent)}
 .idea .like{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;cursor:pointer;font-family:var(--mono);font-size:12px;white-space:nowrap}
 .idea .like.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .roster{display:flex;flex-wrap:wrap;gap:6px}
+.chip.online{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.att-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.att-sum .c{background:var(--surface-2);border-radius:6px;padding:6px 8px;text-align:center}
+.att-sum .c b{display:block;font-family:var(--mono);font-size:17px;line-height:1.2}
+.att-sum .c span{font-size:11px;color:var(--muted)}
+.att-sum .c.venue{background:var(--done-soft)} .att-sum .c.venue b{color:var(--done)}
+.att-sum .c.online{background:var(--accent-soft)} .att-sum .c.online b{color:var(--accent)}
+.att-sum .c.absent{background:var(--late-soft)} .att-sum .c.absent b{color:var(--late)}
+.att-rail{padding:12px 16px;border-top:1px solid var(--line)}
+.att-rail h3{font-size:12.5px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:8px}
+.att-rail h3 .btn{margin-left:auto}
+.att-rail .att-sum{margin-top:8px}
+.att-rail .mine{font-size:12px;margin-top:6px}
+.att-rail .mine b{font-weight:500}
+.att-rail .mine.none{color:var(--late)}
+.att-tbl td.s{white-space:nowrap}
+.att-tbl .nr{color:var(--faint)}
 .chip{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
 .chip.on{background:var(--done-soft);color:var(--done);border-color:transparent}
 .chip.absent{background:var(--late-soft);color:var(--late);border-color:transparent}
@@ -340,6 +357,7 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
       <select id="meetingSel" aria-label="例会を選択"></select>
       <button class="btn small" id="editMeetingBtn">日程・会場</button>
       <button class="btn small" id="newMeetingBtn">＋ 例会を追加</button>
+      <button class="btn small primary" id="attBtn" title="理事会・例会の出欠を登録">出欠を登録</button>
       <div class="count" id="countdown"><b>–</b><span>日</span></div>
     </div>
     <div class="me">
@@ -356,6 +374,7 @@ dialog .d-f{padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px
     <div class="rail-head"><h2 id="railTitle">標準タイムライン</h2><span class="mono" id="railProg" style="font-size:12px;color:var(--muted)">0 / 8</span></div>
     <div class="progress"><i id="progBar"></i></div>
     <ul class="steps" id="steps"></ul>
+    <div class="att-rail" id="attRail"></div>
     <div class="overview"><h3>例会一覧</h3><div class="ov" id="ov"></div></div>
   </aside>
   <main class="main" id="main">
@@ -465,7 +484,7 @@ const STEPS = [
    desc:"申込状況を確認し、目標未達の場合は理事の皆様に個別の声かけをお願いします。",
    fields:[{k:"midMembers",t:"number",l:"会員 申込数"},{k:"midExt",t:"number",l:"外部 申込数"},{k:"midNote",t:"textarea",l:"レビュー所見・依頼事項",wide:true}], outreach:true},
   {key:"day", off:0, label:"当日", name:"開催・受付・設営", owner:"運営委（受付・設営）／ 広報・会員拡大委（外部対応・名刺回収）",
-   desc:"受付・Zoom設営・音響（接続トラブル再発防止）、出欠管理、外部参加者への対応と名刺回収。",
+   desc:"受付・Zoom設営・音響（接続トラブル再発防止）、出欠管理、外部参加者への対応と名刺回収。理事の皆さまは下の「理事会・例会の出欠」で、会場かオンラインか、懇親会に参加するかを登録してください。",
    fields:[{k:"actDirectors",t:"number",l:"理事 出席数"},{k:"actMembers",t:"number",l:"会員 出席数"},{k:"actExt",t:"number",l:"外部参加者数"},{k:"cards",t:"number",l:"名刺回収枚数"},{k:"dayNote",t:"textarea",l:"当日メモ（トラブル・気づき）",wide:true}], attendance:true},
   {key:"t1", off:1, label:"T＋1", name:"「例会3分まとめ」配信", owner:"運営委員会",
    desc:"24時間以内に、全会員・欠席者へ3分まとめを配信します。",
@@ -530,7 +549,7 @@ function renderMe(){
   $("#meSel").innerHTML = opts; $("#whoSel").innerHTML = members.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join("");
 }
 function renderRail(){
-  if (!cur){ $("#steps").innerHTML = `<li class="empty" style="margin:8px">例会を選択してください</li>`; $("#countdown").innerHTML = `<b>–</b><span>日</span>`; return; }
+  if (!cur){ $("#steps").innerHTML = `<li class="empty" style="margin:8px">例会を選択してください</li>`; $("#countdown").innerHTML = `<b>–</b><span>日</span>`; renderAttRail(); return; }
   const t = todayStr(), dd = diffDays(cur.date, t);
   $("#countdown").innerHTML = dd > 0 ? `<b>T−${dd}</b><span>開催まで${dd}日</span>` : dd === 0 ? `<b>当日</b><span>本日開催</span>` : `<b>T＋${-dd}</b><span>開催から${-dd}日</span>`;
   $("#steps").innerHTML = STEPS.map(s => { const st = stepState(cur, s); const due = addDays(cur.date, s.off);
@@ -539,6 +558,7 @@ function renderRail(){
   const done = STEPS.filter(s => (cur.steps||{})[s.key]?.done).length;
   $("#railProg").textContent = `${done} / 8`; $("#progBar").style.width = (done/8*100)+"%";
   $("#railTitle").textContent = cur.title;
+  renderAttRail();
 }
 function fieldHtml(f, v, aiBadge){
   const val = v ?? "";
@@ -614,15 +634,46 @@ function outreachHtml(F){
     <div class="grid"><div class="field"><label>私が声をかける人数</label><input type="number" min="0" id="orPlanned" value="${esc(mine.planned??"")}"></div><div class="field"><label>申込につながった数</label><input type="number" min="0" id="orResult" value="${esc(mine.result??"")}"></div><div class="field wide"><label>声かけ先・メモ</label><input id="orNote" value="${esc(mine.note||"")}" placeholder="例：登録支援機関2社、監理団体1社に案内"></div></div>
     <div><button class="btn" id="orSave">声かけを登録</button></div>${rows}</div>`;
 }
+/* 出欠：status は「会場」「オンライン」「欠席」「未定」。旧データの「出席」は会場扱い */
+const ATT_OPTS = [["会場","会場で出席"],["オンライン","オンラインで出席"],["欠席","欠席"],["未定","未定"]];
+const attNorm = st => st === "出席" ? "会場" : (st || "");
+const attLabel = st => ({"会場":"会場で出席","オンライン":"オンラインで出席","欠席":"欠席","未定":"未定"}[attNorm(st)] || "未回答");
+const attCls = st => ({"会場":"on","オンライン":"online","欠席":"absent","未定":"hold"}[attNorm(st)] || "");
+function attSummary(){
+  const directors = members.filter(m => m.role !== "事務局"), get = id => attendance.find(a => a.id===id) || {};
+  const by = k => directors.filter(m => attNorm(get(m.id).status) === k);
+  const venue = by("会場"), online = by("オンライン"), absent = by("欠席"), hold = by("未定");
+  const noReply = directors.filter(m => !attNorm(get(m.id).status));
+  const social = venue.filter(m => get(m.id).social);
+  return {directors, venue, online, absent, hold, noReply, social, get};
+}
+function attSummaryHtml(a){
+  return `<div class="att-sum"><div class="c venue"><b>${a.venue.length}</b><span>会場</span></div><div class="c online"><b>${a.online.length}</b><span>オンライン</span></div><div class="c"><b>${a.social.length}</b><span>懇親会</span></div><div class="c absent"><b>${a.absent.length}</b><span>欠席</span></div></div>`;
+}
+function renderAttRail(){
+  const box = $("#attRail"); if (!box) return;
+  if (!cur){ box.innerHTML = ""; return; }
+  const a = attSummary(), mine = a.get(me), st = attNorm(mine.status);
+  const mineText = !me ? `<div class="mine none">右上の「あなた」で名前を選ぶと出欠を登録できます</div>` : st ? `<div class="mine">あなた：<b>${esc(attLabel(st))}${st === "会場" ? (mine.social ? "・懇親会参加" : "・懇親会は不参加") : ""}</b></div>` : `<div class="mine none">あなたの出欠は未回答です</div>`;
+  box.innerHTML = `<h3>理事会・例会の出欠 <span class="mono">${a.directors.length - a.noReply.length} / ${a.directors.length}名 回答</span><button class="btn small" id="attRailBtn">登録</button></h3>${attSummaryHtml(a)}${mineText}`;
+  $("#attRailBtn").onclick = goAttendance;
+}
+function goAttendance(){
+  if (!cur) return toast("先に例会を追加してください");
+  if (curStep !== "day"){ curStep = "day"; renderRail(); renderStep(); }
+  const el = $("#attSect"); if (el) el.scrollIntoView({behavior:"smooth", block:"start"});
+  const sel = $("#atStatus"); if (sel) setTimeout(() => sel.focus(), 300);
+}
 function attendanceHtml(){
-  const mine = attendance.find(a => a.id===me) || {};
-  const cls = s => s==="出席"?"on":s==="欠席"?"absent":s==="未定"?"hold":"";
-  const directors = members.filter(m => m.role !== "事務局");
-  const cnt = directors.filter(m => (attendance.find(a=>a.id===m.id)||{}).status==="出席").length;
-  return `<div class="sect"><h3>理事の出欠 <span class="eyebrow">出席 ${cnt} / ${directors.length}名</span></h3>
-    <div class="roster">${members.map(m => { const a = attendance.find(x => x.id===m.id)||{}; return `<span class="chip ${cls(a.status)}">${esc(m.name)}${a.status?`：${a.status}`:""}${a.social?"・懇親会":""}</span>`; }).join("")}</div>
-    <div class="grid"><div class="field"><label>私の出欠</label><select id="atStatus"><option value="">—</option>${["出席","欠席","未定"].map(o=>`<option ${mine.status===o?"selected":""}>${o}</option>`).join("")}</select></div><label class="check field"><input type="checkbox" id="atSocial" ${mine.social?"checked":""}><span>懇親会にも参加</span></label><div class="field"><label>ゲスト同伴（社名・人数）</label><input id="atGuest" value="${esc(mine.guest||"")}" placeholder="例：〇〇社 1名"></div></div>
-    <div><button class="btn" id="atSave">出欠を登録</button></div></div>`;
+  const a = attSummary(), mine = a.get(me), st = attNorm(mine.status);
+  const rows = a.directors.map(m => { const x = a.get(m.id), k = attNorm(x.status);
+    return `<tr class="${k ? "" : "nr"}"><td>${esc(m.name)}</td><td class="s"><span class="chip ${attCls(k)}">${esc(attLabel(k))}</span></td><td class="s">${k === "会場" ? (x.social ? "参加" : "不参加") : "—"}</td><td>${esc(x.guest || "")}</td><td class="s mono" style="font-size:11.5px;color:var(--muted)">${x.updatedAt ? fmtDT(x.updatedAt) : ""}</td></tr>`; }).join("");
+  const staff = members.filter(m => m.role === "事務局" && attNorm(a.get(m.id).status)).map(m => { const x = a.get(m.id); return `<tr><td>${esc(m.name)}<small style="color:var(--muted)">（事務局）</small></td><td class="s"><span class="chip ${attCls(x.status)}">${esc(attLabel(x.status))}</span></td><td class="s">${attNorm(x.status) === "会場" ? (x.social ? "参加" : "不参加") : "—"}</td><td>${esc(x.guest || "")}</td><td></td></tr>`; }).join("");
+  return `<div class="sect" id="attSect"><h3>理事会・例会の出欠 <span class="eyebrow">回答 ${a.directors.length - a.noReply.length} / ${a.directors.length}名${a.noReply.length ? ` ・ 未回答：${esc(a.noReply.map(m => m.name).join("、"))}` : " ・ 全員回答済み"}</span></h3>
+    ${attSummaryHtml(a)}
+    <div class="grid"><div class="field"><label>私の出欠</label><select id="atStatus"><option value="">—</option>${ATT_OPTS.map(([v,l]) => `<option value="${v}" ${st===v ? "selected" : ""}>${l}</option>`).join("")}</select></div><label class="check field" id="atSocialWrap" ${st === "会場" ? "" : "hidden"}><input type="checkbox" id="atSocial" ${mine.social ? "checked" : ""}><span>懇親会にも参加する</span></label><div class="field"><label>ゲスト同伴（社名・人数）</label><input id="atGuest" value="${esc(mine.guest||"")}" placeholder="例：〇〇社 1名"></div></div>
+    <div><button class="btn primary" id="atSave">出欠を登録</button> <span class="hint">後から何度でも変更できます</span></div>
+    <div class="tbl att-tbl"><table><thead><tr><th>理事</th><th>出欠</th><th>懇親会</th><th>ゲスト</th><th>更新</th></tr></thead><tbody>${rows}${staff}</tbody></table></div></div>`;
 }
 function kpiHtml(F){
   const directors = members.filter(m => m.role !== "事務局").length;
@@ -662,8 +713,10 @@ function bindStep(s){
   document.querySelectorAll("[data-del]").forEach(a => a.onclick = ev => { ev.preventDefault(); const id = a.dataset.del; guard(async () => { if (db) await db.doc(`meetings/${curId}/ideas/${id}`).delete(); else { ideas = ideas.filter(x => x.id!==id); renderStep(); } }, "削除しました"); });
   const or = $("#orSave"); if (or) or.onclick = () => { if(!needMe()) return; const doc = {name: memberName(me), planned: Number($("#orPlanned").value||0), result: Number($("#orResult").value||0), note: $("#orNote").value.trim(), updatedAt: now()};
     guard(async () => { if (db) await db.doc(`meetings/${curId}/outreach/${me}`).set(doc); else { outreach = outreach.filter(o => o.id!==me).concat([{...doc, id:me}]); renderStep(); } }, "声かけを登録しました"); };
-  const at = $("#atSave"); if (at) at.onclick = () => { if(!needMe()) return; const doc = {name: memberName(me), status: $("#atStatus").value, social: $("#atSocial").checked, guest: $("#atGuest").value.trim(), updatedAt: now()};
-    guard(async () => { if (db) await db.doc(`meetings/${curId}/attendance/${me}`).set(doc); else { attendance = attendance.filter(o => o.id!==me).concat([{...doc, id:me}]); renderStep(); } }, "出欠を登録しました"); };
+  const atSel = $("#atStatus"); if (atSel) atSel.onchange = () => { $("#atSocialWrap").hidden = atSel.value !== "会場"; };
+  const at = $("#atSave"); if (at) at.onclick = () => { if(!needMe()) return; const status = $("#atStatus").value; if (!status) return toast("出欠を選んでください");
+    const doc = {name: memberName(me), status, social: status === "会場" && $("#atSocial").checked, guest: $("#atGuest").value.trim(), updatedAt: now()};
+    guard(async () => { if (db) await db.doc(`meetings/${curId}/attendance/${me}`).set(doc); else { attendance = attendance.filter(o => o.id!==me).concat([{...doc, id:me}]); renderStep(); renderAttRail(); } }, "出欠を登録しました"); };
   const ts = $("#themeSave"); if (ts) ts.onclick = () => { if(!needMe()) return; if (!canEditTheme()) return toast("決定テーマは理事長・事務局が記入します"); const theme = $("#themeInput").value.trim();
     guard(async () => { if (db) await db.doc(`meetings/${curId}`).update({fields:{theme}, updatedAt: now(), updatedBy: me}); else { (cur.fields ||= {}).theme = theme; cur.updatedAt = now(); cur.updatedBy = me; renderStep(); } }, "決定テーマを保存しました"); };
   if (s.discuss){
@@ -792,7 +845,7 @@ function selectMeeting(id){
     unsubs.push(db.collection(`meetings/${id}/ideas`).orderBy("createdAt","asc").onSnapshot(s => { ideas = snapToArr(s); aiLoaded.ideas = true; if (curStep==="t60" || AI_STEPS.includes(curStep)) renderStep(); }, onErr));
     unsubs.push(db.collection(`meetings/${id}/comments`).onSnapshot(s => { comments = snapToArr(s); aiLoaded.comments = true; renderStep(); }, onErr));
     unsubs.push(db.collection(`meetings/${id}/outreach`).onSnapshot(s => { outreach = snapToArr(s); if (curStep==="t14") renderStep(); }, onErr));
-    unsubs.push(db.collection(`meetings/${id}/attendance`).onSnapshot(s => { attendance = snapToArr(s); if (curStep==="day") renderStep(); }, onErr));
+    unsubs.push(db.collection(`meetings/${id}/attendance`).onSnapshot(s => { attendance = snapToArr(s); renderAttRail(); if (curStep==="day") renderStep(); }, onErr));
     unsubs.push(db.collection(`meetings/${id}/t45posts`).orderBy("createdAt","asc").onSnapshot(s => { t45posts = snapToArr(s); if (curStep==="t45") renderStep(); }, onErr));
   }
   // 開いたときに「今」の工程を選ぶ
@@ -823,7 +876,8 @@ $("#membersDlg").addEventListener("close", () => { if ($("#membersDlg").returnVa
   const lines = $("#mList").value.split("\n").map(l => l.trim()).filter(Boolean);
   const list = lines.map(l => { const [name, role] = l.split(/[,、，]/).map(x => (x||"").trim()); const ex = members.find(m => m.name===name); return {id: ex ? ex.id : "m" + Math.random().toString(36).slice(2,8), name, role: role || "理事"}; });
   guard(async () => { if (db) await db.doc("config/members").set({list, updatedAt: now()}); else { members = list; renderMe(); renderStep(); } }, "名簿を保存しました"); });
-$("#meSel").onchange = e => { me = e.target.value || null; safeLS("reikai.me", me||""); renderStep(); renderRinen(); };
+$("#meSel").onchange = e => { me = e.target.value || null; safeLS("reikai.me", me||""); renderStep(); renderRinen(); renderAttRail(); };
+$("#attBtn").onclick = goAttendance;
 
 /* ---------- 理念づくり（意見集約） ---------- */
 const RINEN_DEFAULT = {
