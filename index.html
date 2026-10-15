@@ -922,7 +922,7 @@ $("#attBtn").onclick = goAttendance;
 /* ---------- 理念づくり（意見集約） ---------- */
 const RINEN_DEFAULT = {
   title: "新しい理念づくり",
-  intro: "コンソーシアムの新しい理念を策定するにあたり、理事の皆さまのお考えを集めます。\n① 誰に向けた言葉か → ② その相手に伝えたい主旨・キーワード → ③ 背景（任意）の3ステップ、1分で投稿できます。\nここで決めるのではなく、集まった意見を毎月の理事会で議論し、次につなげていきます。共感する意見には 👍 を押してください。",
+  intro: "コンソーシアムの新しい理念を策定するにあたり、理事の皆さまのお考えを集めます。\n① 誰に向けた言葉か → ② その相手に伝えたい主旨・キーワード → ③ その言葉の深掘り（任意）の3ステップ、1分で投稿できます。\nここで決めるのではなく、集まった意見を毎月の理事会で議論し、次につなげていきます。共感する意見には 👍 を押してください。",
   goal: "2027年3月末までに新しい理念を完成",
   deadlineMode: "auto",
   deadline: "",
@@ -930,7 +930,7 @@ const RINEN_DEFAULT = {
   stakeholders: ["日本社会・未来の世代","国・行政（出入国在留管理庁・自治体）","地域社会・地域の住民","送り出し国・海外の機関","業界全体（登録支援機関・監理団体・人材会社）","受入れ企業・事業者","会員企業・会員","在留外国人 本人","外国人の家族","コンソーシアム（理事・事務局）自身"],
   q1: "誰に向けた理念にしますか", q1hint: "伝えたい相手を選んでください（複数選択できます）。上ほど広い対象、下ほど身近な対象です",
   q2: "その相手に伝えたい主旨・キーワード", q2hint: "一言で構いません。例：「困ったときに頼れる存在であり続ける」「共生」",
-  q3: "その背景・もう少し詳しく（任意）", q3hint: "なぜそう考えるのか、具体的な場面など。空欄でも投稿できます"
+  q3: "その言葉に込めた想いを深掘りしてください（任意）", q3hint: "なぜその相手にそう伝えたいのか。背景にある経験や具体的な場面、こだわりなど。空欄でも投稿できます"
 };
 let view = safeLS("reikai.view") === "rinen" ? "rinen" : "timeline", rinenCfg = null, rinenPosts = [], rinenSel = new Set(), rinenFilter = "";
 function setView(v){
@@ -969,7 +969,7 @@ function renderRinen(){
       <div class="scale"><span>広い対象（マクロ）</span><span>身近な対象（ミクロ）</span></div>
       <div class="sel">${sh.map(x => `<button type="button" class="sel-chip ${rinenSel.has(x) ? "on" : ""}" data-tg="${esc(x)}" aria-pressed="${rinenSel.has(x)}">${esc(x)}</button>`).join("")}</div></div>
     <div class="stp"><div class="stp-h"><span class="qn">②</span><b>${esc(cfg.q2)}</b><span class="hint">${esc(cfg.q2hint)}</span></div><input id="rmMsg" maxlength="80" value="${esc(draft.m)}" placeholder="例：困ったときに頼れる存在であり続ける"></div>
-    <div class="stp"><div class="stp-h"><span class="qn">③</span><b>${esc(cfg.q3)}</b><span class="hint">${esc(cfg.q3hint)}</span></div><textarea id="rmDetail" placeholder="任意">${esc(draft.d)}</textarea></div>
+    <div class="stp"><div class="stp-h"><span class="qn">③</span><b>${esc(cfg.q3)}</b><span class="hint">${esc(cfg.q3hint)}</span></div><textarea id="rmDetail" placeholder="任意。例：現場で○○という場面を何度も見てきたから">${esc(draft.d)}</textarea></div>
     <div class="post-actions"><button class="btn primary big" id="rinenPost">投稿する</button><span class="hint">${me ? `投稿者：${esc(memberName(me))}` : "右上の「あなた」で名前を選んでください"}</span></div></div>`;
   // 一覧（対象で絞り込み）
   const newPosts = rinenPosts.filter(isNewPost), legacy = rinenPosts.filter(p => !isNewPost(p));
@@ -1016,7 +1016,7 @@ function rinenSummaryText(){
   const out = [`${cfg.title} 意見まとめ（${fmt(todayStr())} 時点）`, `回答 ${[...posted].filter(id => directors.some(m => m.id===id)).length}/${directors.length}名 ・ ${rinenPosts.length}件${rinenDeadline(cfg) ? ` ・ 理事会 ${fmt(rinenDeadline(cfg).date)}` : ""}${cfg.goal ? ` ・ 最終目標：${cfg.goal}` : ""}`, ""];
   if (cfg.minutes) out.push("■ これまでの理事会での議論・決まったこと", cfg.minutes, "");
   const groups = rinenGroups(); if (!groups.length) out.push("（意見はまだありません）");
-  groups.forEach(g => { out.push(`■ ${g.name}（${g.posts.length}件）`); g.posts.forEach((p, j) => { out.push(`${j+1}. ${p.message}　― ${p.author}${likeCount(p) ? `（👍${likeCount(p)}）` : ""}`); if (p.detail) out.push(`   背景：${p.detail.replace(/\s*\n\s*/g, " ")}`); }); out.push(""); });
+  groups.forEach(g => { out.push(`■ ${g.name}（${g.posts.length}件）`); g.posts.forEach((p, j) => { out.push(`${j+1}. ${p.message}　― ${p.author}${likeCount(p) ? `（👍${likeCount(p)}）` : ""}`); if (p.detail) out.push(`   深掘り：${p.detail.replace(/\s*\n\s*/g, " ")}`); }); out.push(""); });
   const legacy = rinenPosts.filter(p => !isNewPost(p)); if (legacy.length){ out.push("■ 以前の形式で投稿された意見"); legacy.sort(byLikes).forEach((p, j) => out.push(`${j+1}. ${(p.text||"").replace(/\s*\n\s*/g, " ")}　― ${p.author}${likeCount(p) ? `（👍${likeCount(p)}）` : ""}`)); out.push(""); }
   return out.join("\n");
 }
